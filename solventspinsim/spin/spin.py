@@ -1,0 +1,169 @@
+import numpy as np
+from enum import Enum
+from spin.types import *
+from spin.peak import gen_peaklist_strong, gen_peaklist_weak
+
+class CouplingStrength(Enum):
+    WEAK = 0
+    STRONG = 1
+
+class Spin:
+    """
+    A class representing a spin system for NMR (Nuclear Magnetic Resonance) simulations. 
+    Encapsulates the properties of nuclei, their resonance frequencies, scalar couplings, 
+    spectral linewidths, and the coupling type for simulation.
+
+    Attributes
+    ----------
+    _nuclei_number : int
+        Number of nuclei in the spin system (inferred from the length of nuclei_frequencies).
+    nuclei_frequencies : list[float] | list[int]
+        List of resonance frequencies (in Hz) for each nucleus in the spin system.
+    couplings : ArrayLike (ndarray)
+        2D matrix (n x n) of scalar coupling constants or J-couplings between nuclei.
+    half_height_width : float | int
+        Peak width at half height (in Hz) for spectral lines.
+    coupling_strength : CouplingStrength
+        Enum indicating the coupling type for simulation (e.g., weak coupling or strong coupling).
+
+    Raises
+    ------
+    TypeError
+        If input types for nuclei_frequencies, couplings, half_height_width, or coupling_strength are invalid.
+    ValueError
+        If couplings is not a square matrix of shape (n, n) or if coupling_strength is not a valid value.
+
+    Methods
+    -------
+    peaklist() -> np.ndarray
+        //WIP//
+    """
+    def __init__(self, nuclei_frequencies : list[float] | list[int], couplings : ArrayLike, 
+                 half_height_width : float | int = 0.5, 
+                 coupling_strength : CouplingStrength | str | int = CouplingStrength.WEAK) -> None:
+        """
+        Initializes a Spin object with specified nuclear frequencies, coupling matrix, linewidth, and coupling strength.
+
+        Parameters
+        ----------
+            nuclei_frequencies : list of float
+                List of resonance frequencies (in Hz) for each nucleus in the spin system.
+            couplings : ArrayLike
+                2D matrix (n x n) of scalar coupling constants (in Hz) between nuclei. Each row corresponds to a nucleus,
+                
+                and each element in the row is the coupling to another nucleus.
+            half_height_width : float or int, optional
+                Linewidth at half height (in Hz) for each resonance, by default 0.5.
+            coupling_strength : CouplingStrength | str | int, optional
+                Enum specifying the coupling regime (e.g., WEAK or STRONG), by default CouplingStrength.WEAK.
+                
+                Alternatively, input 0 for weak and 1 for strong or "weak"/"strong" strings
+
+        Returns
+        -------
+        None
+        """
+        
+        self._nuclei_number : int = len(nuclei_frequencies)
+        self.nuclei_frequencies = nuclei_frequencies
+        self.couplings = couplings
+        self.half_height_width = half_height_width
+        self.coupling_strength = coupling_strength
+
+    # ---------------------------------------------------------------------------- #
+    #                              Getters and Setters                             #
+    # ---------------------------------------------------------------------------- #
+
+    # ---------------------------- nuclei_frequencies ---------------------------- #
+
+    @property
+    def nuclei_frequencies(self) -> list[float] | list[int]:
+        return self._nuclei_frequencies
+
+    @nuclei_frequencies.setter
+    def nuclei_frequencies(self, value: list[float] | list[int]) -> None:
+        if not isinstance(value, list) or not all(isinstance(x, (float, int)) for x in value):
+            raise TypeError("nuclei_frequencies must be a list of floats or ints")
+        self._nuclei_frequencies: list[float] | list[int] = value
+
+    # --------------------------------- couplings -------------------------------- #
+
+    @property
+    def couplings(self) -> ArrayLike:
+        return self._couplings
+
+    @couplings.setter
+    def couplings(self, value: ArrayLike) -> None:
+        arr = np.array(value)
+        n = self._nuclei_number
+        if arr.ndim != 2 or arr.shape[0] != n or arr.shape[1] != n:
+            raise ValueError(f"couplings must be a 2D square matrix of shape ({n}, {n})")
+        if not np.issubdtype(arr.dtype, np.number):
+            raise TypeError("couplings matrix must contain numeric values")
+        self._couplings: np.ndarray = arr
+
+    # ----------------------------- half_height_width ---------------------------- #
+
+    @property
+    def half_height_width(self) -> float | int:
+        return self._half_height_width
+
+    @half_height_width.setter
+    def half_height_width(self, value: float | int) -> None:
+        if not isinstance(value, (float, int)):
+            raise TypeError("half_height_width must be a float or int")
+        self._half_height_width: float | int = value
+
+    # ----------------------------- coupling_strength ---------------------------- #
+
+    @property
+    def coupling_strength(self) -> CouplingStrength:
+        return self._coupling_strength
+
+    @coupling_strength.setter
+    def coupling_strength(self, value: CouplingStrength | str | int) -> None:
+        if isinstance(value, CouplingStrength):
+            self._coupling_strength: CouplingStrength = value
+        elif isinstance(value, str):
+            if value.lower() == 'weak':
+                self._coupling_strength = CouplingStrength.WEAK
+            elif value.lower() == 'strong':
+                self._coupling_strength = CouplingStrength.STRONG
+            else:
+                raise ValueError("Invalid coupling strength string")
+        elif isinstance(value, int):
+            if value == 0:
+                self._coupling_strength = CouplingStrength.WEAK
+            elif value == 1:
+                self._coupling_strength = CouplingStrength.STRONG
+            else:
+                raise ValueError("Invalid coupling strength integer")
+        else:
+            raise TypeError("Invalid type for coupling_strength")
+
+    # ---------------------------------------------------------------------------- #
+    #                                   Functions                                  #
+    # ---------------------------------------------------------------------------- #
+
+    def peaklist(self) -> PeakList:
+        """
+        Generates and returns a PeakList object based on the current coupling strength.
+        Depending on whether the coupling strength is strong or not, this method calls the appropriate
+        peak list generation function:
+
+            - `gen_peaklist_strong`: See documentation at `spin.peak.gen_peaklist_strong`
+            - `gen_peaklist_weak`: See documentation at `spin.peak.gen_peaklist_weak`
+
+        Both functions use the nuclei frequencies and couplings associated with the Spin object.
+
+        Returns
+        -------
+            PeakList : (list[tuple[float, float]])
+            The generated peak list for the current spin system.
+        """
+        match self._coupling_strength:
+            case CouplingStrength.STRONG:
+                return gen_peaklist_strong(self._nuclei_frequencies, self._couplings)
+            case _:
+                return gen_peaklist_weak(self._nuclei_frequencies, self._couplings)
+    
