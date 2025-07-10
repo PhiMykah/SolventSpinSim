@@ -2,6 +2,7 @@ import numpy as np
 from enum import Enum
 from spin.types import *
 from spin.peak import gen_peaklist_strong, gen_peaklist_weak
+from sys import stderr
 
 class CouplingStrength(Enum):
     WEAK = 0
@@ -16,27 +17,27 @@ class Spin:
     Attributes
     ----------
     _nuclei_number : int
-        Number of nuclei in the spin system (inferred from the length of nuclei_frequencies).
+        Number of nuclei in the spin system (inferred from the length of nuclei_frequencies)
     nuclei_frequencies : list[float] | list[int]
-        List of resonance frequencies (in Hz) for each nucleus in the spin system.
+        List of resonance frequencies (in Hz) for each nucleus in the spin system
     couplings : ArrayLike (ndarray)
-        2D matrix (n x n) of scalar coupling constants or J-couplings between nuclei.
+        2D matrix (n x n) of scalar coupling constants or J-couplings between nuclei
     half_height_width : float | int
-        Peak width at half height (in Hz) for spectral lines.
+        Peak width at half height (in Hz) for spectral lines
     coupling_strength : CouplingStrength
-        Enum indicating the coupling type for simulation (e.g., weak coupling or strong coupling).
+        Enum indicating the coupling type for simulation (e.g., weak coupling or strong coupling)
 
     Raises
     ------
     TypeError
-        If input types for nuclei_frequencies, couplings, half_height_width, or coupling_strength are invalid.
+        If input types for nuclei_frequencies, couplings, half_height_width, or coupling_strength are invalid
     ValueError
-        If couplings is not a square matrix of shape (n, n) or if coupling_strength is not a valid value.
+        If couplings is not a square matrix of shape (n, n) or if coupling_strength is not a valid value
 
     Methods
     -------
-    peaklist() -> np.ndarray
-        //WIP//
+    peaklist() -> list[tuple[float,float]]
+        Generates and returns a PeakList object based on the current coupling strength
     """
     def __init__(self, nuclei_frequencies : list[float] | list[int], couplings : ArrayLike, 
                  half_height_width : float | int = 0.5, 
@@ -47,15 +48,15 @@ class Spin:
         Parameters
         ----------
             nuclei_frequencies : list of float
-                List of resonance frequencies (in Hz) for each nucleus in the spin system.
+                List of resonance frequencies (in Hz) for each nucleus in the spin system
             couplings : ArrayLike
                 2D matrix (n x n) of scalar coupling constants (in Hz) between nuclei. Each row corresponds to a nucleus,
                 
-                and each element in the row is the coupling to another nucleus.
+                and each element in the row is the coupling to another nucleus
             half_height_width : float or int, optional
-                Linewidth at half height (in Hz) for each resonance, by default 0.5.
+                Linewidth at half height (in Hz) for each resonance, by default 0.5
             coupling_strength : CouplingStrength | str | int, optional
-                Enum specifying the coupling regime (e.g., WEAK or STRONG), by default CouplingStrength.WEAK.
+                Enum specifying the coupling regime (e.g., WEAK or STRONG), by default CouplingStrength.WEAK
                 
                 Alternatively, input 0 for weak and 1 for strong or "weak"/"strong" strings
 
@@ -63,7 +64,6 @@ class Spin:
         -------
         None
         """
-        
         self._nuclei_number : int = len(nuclei_frequencies)
         self.nuclei_frequencies = nuclei_frequencies
         self.couplings = couplings
@@ -158,12 +158,14 @@ class Spin:
 
         Returns
         -------
-            PeakList : (list[tuple[float, float]])
-            The generated peak list for the current spin system.
+        PeakList : list[tuple[float, float]]
+            The generated peak list for the current spin system
         """
         match self._coupling_strength:
             case CouplingStrength.STRONG:
-                return gen_peaklist_strong(self._nuclei_frequencies, self._couplings)
+                # return gen_peaklist_strong(self._nuclei_frequencies, self._couplings)
+                print("Strong coupling peak list generation is still in development. Defaulting to weak coupling.", file=stderr)
+                return gen_peaklist_weak(self._nuclei_frequencies, self._couplings)
             case _:
                 return gen_peaklist_weak(self._nuclei_frequencies, self._couplings)
     
