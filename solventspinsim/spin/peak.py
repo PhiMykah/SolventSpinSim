@@ -59,7 +59,7 @@ def _multiplet(signal : tuple, couplings : Generator[tuple[ArrayLike, int]]) -> 
 
     Returns
     -------
-    PeakList
+    PeakList: list[tuple[float,float]]
         A sorted list of peaks after applying all couplings
 
     Notes
@@ -80,14 +80,14 @@ def _doublet(peaklist, coupling_constant) -> PeakList:
 
     Parameters
     ----------
-    peaklist : PeakList
+    peaklist : list[tuple[float,float]]
         List of (frequency, intensity) tuples representing the original peaks
     coupling_constant : float
         The coupling constant (Hz) used to split each peak
 
     Returns
     -------
-    PeakList
+    PeakList :  list[tuple[float,float]]
         A new list of (frequency, intensity) tuples representing the doublet peaks
 
     Notes
@@ -110,7 +110,7 @@ def _reduce_peaks(unsorted_peaklist, tolerance=0) -> PeakList:
 
     Parameters
     ----------
-        unsorted_peaklist : PeakList
+        unsorted_peaklist : list[tuple[float,float]]
             The list of peaks to be reduced
         tolerance : float, optional
             The maximum allowed difference between peak positions 
@@ -153,12 +153,12 @@ def peak_sum(peaklist : PeakList) -> Peak:
 
     Parameters
     ----------
-    peaklist : PeakList
+    peaklist : list[tuple[float,float]]
         list of peaks to sum together
 
     Returns
     -------
-    Peak
+    Peak : tuple
         New peak sum with frequency average and intensity total
 
     Notes

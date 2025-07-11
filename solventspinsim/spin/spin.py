@@ -169,3 +169,46 @@ class Spin:
             case _:
                 return gen_peaklist_weak(self._nuclei_frequencies, self._couplings)
     
+def loadSpinFromFile(file : str) -> tuple[list[float] | list[int], np.ndarray]:
+    """
+    Parse a text file for a spin matrix, collecting the coupling matrix and nuclei frequencies
+
+    Parameters
+    ----------
+    file : str
+        File path for the text file
+
+    Returns
+    -------
+    nuclei_frequencies : list[float] | list[int]
+        List of resonance frequencies (in Hz) for each nucleus in the spin system
+    couplings : np.ndarray
+        2D matrix (n x n) of scalar coupling constants or J-couplings between nuclei
+    """
+
+    with open(file, 'r') as f:
+        lines = [line.strip() for line in f if line.strip()]
+
+    # Last line is spin names
+    spin_names = lines[0].split() # skip the first column header
+
+    # All lines except last are matrix rows
+    matrix_lines = lines[1:-1]  # skip the first header and last spin names
+
+    N = len(spin_names)
+    cmat = np.zeros((N, N), dtype=float)
+    chem_shifts = []
+
+    for i, line in enumerate(matrix_lines):
+        parts = line.split()
+        # Diagonal value is the chemical shift
+        chem_shifts.append(float(parts[i+1]))
+        for j in range(N):
+            if i == j:
+                cmat[i, j] = 0.0  # Set diagonal (chemical shift) to 0
+            else:
+                cmat[i, j] = float(parts[j+1])
+    # Reflect cmat across the diagonal to ensure symmetry
+    cmat = (cmat + cmat.T)
+
+    return chem_shifts, cmat
