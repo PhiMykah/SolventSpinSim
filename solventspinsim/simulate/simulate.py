@@ -1,6 +1,4 @@
-from matplotlib.pylab import half
 import numpy as np
-from numpy._typing._array_like import NDArray
 from simulate.types import *
 
 def simulate_peaklist(peaklist : PeakList, points : int = 800, half_height_width : float | int = 1,

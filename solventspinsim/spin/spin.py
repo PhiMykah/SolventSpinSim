@@ -39,14 +39,16 @@ class Spin:
     peaklist() -> list[tuple[float,float]]
         Generates and returns a PeakList object based on the current coupling strength
     """
-    def __init__(self, nuclei_frequencies : list[float] | list[int], couplings : ArrayLike, 
-                 half_height_width : float | int = 0.5, 
+    def __init__(self, spin_names : list[str] = [], nuclei_frequencies : list[float] | list[int] = [], couplings : ArrayLike = np.empty((0,0)), 
+                 half_height_width : float | int = 0.5, field_strength : float = 500,
                  coupling_strength : CouplingStrength | str | int = CouplingStrength.WEAK) -> None:
         """
         Initializes a Spin object with specified nuclear frequencies, coupling matrix, linewidth, and coupling strength.
 
         Parameters
         ----------
+            spin_names : list of str
+                Names of the atoms for each nuclei frequency
             nuclei_frequencies : list of float
                 List of resonance frequencies (in Hz) for each nucleus in the spin system
             couplings : ArrayLike
@@ -65,6 +67,8 @@ class Spin:
         None
         """
         self._nuclei_number : int = len(nuclei_frequencies)
+        self.spin_names = spin_names
+        self.field_strength = field_strength
         self.nuclei_frequencies = nuclei_frequencies
         self.couplings = couplings
         self.half_height_width = half_height_width
@@ -74,6 +78,29 @@ class Spin:
     #                              Getters and Setters                             #
     # ---------------------------------------------------------------------------- #
 
+    @property
+    def spin_names(self) -> list[str]:
+        return self._spin_names
+    
+    @spin_names.setter
+    def spin_names(self, value : list[float] | list[int] | list[str]):
+        if not isinstance(value, list) or not all(isinstance(x, (str, float, int)) for x in value):
+            raise TypeError("spin_names must be a list of floats or ints")
+        self._spin_names : list[str] = [str(name) for name in value]
+
+    # ------------------------------ field_strength ------------------------------ #
+
+    @property
+    def field_strength(self) -> float:
+        return self._field_strength
+    
+    @field_strength.setter
+    def field_strength(self, value : float) -> None:
+        try:
+            self._field_strength : float = abs(float(value))
+        except:
+            raise TypeError("field_strength must be a numeric value.")
+        
     # ---------------------------- nuclei_frequencies ---------------------------- #
 
     @property
@@ -84,7 +111,7 @@ class Spin:
     def nuclei_frequencies(self, value: list[float] | list[int]) -> None:
         if not isinstance(value, list) or not all(isinstance(x, (float, int)) for x in value):
             raise TypeError("nuclei_frequencies must be a list of floats or ints")
-        self._nuclei_frequencies: list[float] | list[int] = value
+        self._nuclei_frequencies: list[float] | list[int] = ppm_to_hz(value, self._field_strength)
 
     # --------------------------------- couplings -------------------------------- #
 
@@ -169,7 +196,7 @@ class Spin:
             case _:
                 return gen_peaklist_weak(self._nuclei_frequencies, self._couplings)
     
-def loadSpinFromFile(file : str) -> tuple[list[float] | list[int], np.ndarray]:
+def loadSpinFromFile(file : str) -> tuple[list[str], list[float] | list[int], np.ndarray]:
     """
     Parse a text file for a spin matrix, collecting the coupling matrix and nuclei frequencies
 
@@ -211,4 +238,8 @@ def loadSpinFromFile(file : str) -> tuple[list[float] | list[int], np.ndarray]:
     # Reflect cmat across the diagonal to ensure symmetry
     cmat = (cmat + cmat.T)
 
-    return chem_shifts, cmat
+    return spin_names, chem_shifts, cmat
+
+def ppm_to_hz(ppm : list[float] | list[int], spec_freq : float):
+    """Given a chemical shift in ppm and spectrometer frequency in MHz, return the corresponding chemical shift in Hz."""
+    return [d * spec_freq for d in ppm]

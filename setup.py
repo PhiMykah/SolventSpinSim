@@ -5,7 +5,8 @@ setup(name='solventspinsim',
     packages=find_packages(), 
     install_requires=[
         'numpy',
-        'nmrPype'
+        'nmrPype',
+        'dearpygui',
     ],
     entry_points={
         'console_scripts': [
