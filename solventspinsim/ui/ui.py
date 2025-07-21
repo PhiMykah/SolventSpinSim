@@ -1,9 +1,11 @@
 import dearpygui.dearpygui as dpg
-from ui.callbacks import *
+from ui.themes import Theme
 from ui.graphics import matrix_table_settings, plot_window
+from ui.callbacks import set_file_callback, set_nmr_file_callback, test_callback, setter_callback, fit_axes
+from ui.components import Button
+from spin.spin import Spin
 from optimize.optimize import optimize_callback
 from pathlib import Path
-
 ASSETS_DIR = (Path(__file__).parent.parent / 'assets').resolve() # Directory of all package assets
 
 class UI:
@@ -14,10 +16,12 @@ class UI:
         self.title : str = title
         self.spin_file : str = ""
         self.nmr_file : str = ""
-        self.mat_table = ""
+        self.mat_table : str | None = None
         self.field_strength : float = 500.0
         self.spin = Spin()
         self.window = None
+        self.disabled_theme = None
+        self.buttons: dict[str, Button] = {}
         pass        
 
     def main_window(self) -> None:
@@ -26,7 +30,7 @@ class UI:
 
         Assumes dearpygui's context has been created
         """
-        
+            
         with dpg.file_dialog(directory_selector=False, show=False, callback=set_file_callback, width=800, height=400, 
                              user_data=(self, 'spin_file', True)) as load_file_dialog:
             dpg.add_file_extension("", color=(150, 255, 150, 255))
@@ -53,15 +57,15 @@ class UI:
             dpg.add_input_float(label='Field Strength', default_value=500.0, format="%.02f", step=1, 
                                 step_fast=10, tag='field_strength', callback=setter_callback,
                                 user_data=(self, 'field_strength'), tracked=True, width=200)
-            dpg.add_button(label='Optimize', callback=optimize_callback, user_data=self)
+            self.buttons['optimize'] = Button(label='Optimize', callback=optimize_callback, user_data=self, enabled=False)
 
             plot_window()            
 
-            dpg.add_button(label='Fit Axes', callback=fit_axes)
+            self.buttons['fit_axes'] = Button(label='Fit Axes', callback=fit_axes, enabled=False)
 
             dpg.add_separator()
 
-            self.mat_table : str = matrix_table_settings(self)
+            matrix_table_settings(self)
             
             
         # dpg.set_viewport_resize_callback(callback=viewport_resize_callback)   
@@ -82,6 +86,7 @@ class UI:
         Do not include `decorated` keyword argument, as it is included in functon
         """
         dpg.create_context()
+        Theme.disabled_theme()
         dpg.create_viewport(title=self.title, decorated=True, **viewport_kwargs)
         dpg.setup_dearpygui()
 

@@ -1,7 +1,7 @@
 from pathlib import Path
 import os
 import dearpygui.dearpygui as dpg
-from ui.callbacks import *
+from ui.callbacks import load_table
 
 def load_static_texture(file : str, texture_tag : int | str = 0) -> int | str:
     if not Path(file).is_file():
@@ -18,8 +18,7 @@ def plot_window() -> None:
         dpg.add_plot_axis(dpg.mvXAxis, label="x", tag="x_axis")
         dpg.add_plot_axis(dpg.mvYAxis, label="y", tag="y_axis")
 
-def matrix_table_settings(ui) -> str:
-    table_tag = 'matrix_table'
+def matrix_table_settings(ui) -> None:
     with dpg.table(header_row=False):
         dpg.add_table_column(width=100)
         dpg.add_table_column(width=100)
@@ -30,8 +29,7 @@ def matrix_table_settings(ui) -> str:
             dpg.add_text('Maximum Frequency')
 
         with dpg.table_row():
-            dpg.add_slider_float(label='##Minimum Frequency', tag='table_min_freq', default_value=0.0, width=-1)
-            dpg.add_slider_float(label='##Maximum Frequency', tag='table_max_freq', default_value=100.0, width=-1)
-            dpg.add_button(label='Load Table', callback=load_table, user_data=ui)
+            dpg.add_drag_float(label='##Minimum Frequency', tag='table_min_freq', default_value=-100.0, width=-1)
+            dpg.add_drag_float(label='##Maximum Frequency', tag='table_max_freq', default_value=100.0, width=-1)
+            dpg.add_button(label='Update Matrix', callback=load_table, user_data=ui)
             
-    return table_tag
