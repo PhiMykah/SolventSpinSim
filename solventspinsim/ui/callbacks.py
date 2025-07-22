@@ -32,6 +32,15 @@ def viewport_resize_callback(sender, app_data, user_data) -> None:
     current_height = dpg.get_viewport_height()
     print(f"Viewport resized to: Width={current_width}, Height={current_height}")
 
+def help_msg(message) -> None:
+    last_item = dpg.last_item()
+    group = dpg.add_group(horizontal=True)
+    dpg.move_item(last_item, parent=group)
+    dpg.capture_next_item(lambda s: dpg.move_item(s, parent=group))
+    t = dpg.add_text("(?)", color=[0, 255, 0])
+    with dpg.tooltip(t):
+        dpg.add_text(message)
+
 # ---------------------- File Selection Callbacks ---------------------------- #
 
 def set_file_callback(sender, app_data : dict, user_data : tuple["UI", str, str]) -> None:
@@ -49,20 +58,21 @@ def set_file_callback(sender, app_data : dict, user_data : tuple["UI", str, str]
     if update_callback:
         update_plot_callback(sender, app_data, (file, ui))
 
-def set_nmr_file_callback(sender, app_data, user_data : tuple[object, str, bool]) -> None:
+def set_nmr_file_callback(sender, app_data, user_data : "tuple[UI, str, bool]") -> None:
     """
     Sets the NMR file attribute and optionally updates the NMR plot.
     """
     file = app_data['file_path_name']
-    obj = user_data[0]
+    ui = user_data[0]
     attr = user_data[1]
 
-    setattr(obj, attr, file)
+    setattr(ui, attr, file)
 
 
+    field_strength : float = getattr(user_data[0], 'field_strength', 500.0)
+    nmr_array = load_nmr_array(file, field_strength)
+    ui.points = len(nmr_array[0])
     if user_data[2]:
-        field_strength : float = getattr(user_data[0], 'field_strength', 500.0)
-        nmr_array = load_nmr_array(file, field_strength)
         set_nmr_plot_values(nmr_array)
 
 # ---------------------- Plot Update Callbacks ------------------------------- #
@@ -82,7 +92,7 @@ def update_plot_callback(sender, app_data, user_data: "UI | tuple[str, UI]") -> 
         spin_names, nuclei_frequencies, couplings = loadSpinFromFile(ui.spin_file)
         spin = Spin(spin_names, nuclei_frequencies, couplings)
         setattr(ui, "spin", spin)
-        simulation = simulate_peaklist(spin.peaklist(), 1000, spin.half_height_width)
+        simulation = simulate_peaklist(spin.peaklist(), ui.points, spin.half_height_width)
 
     elif isinstance(user_data, tuple) and len(user_data) == 2:
         # Tuple: (str, UI)
@@ -93,7 +103,7 @@ def update_plot_callback(sender, app_data, user_data: "UI | tuple[str, UI]") -> 
         spin_names, nuclei_frequencies, couplings = loadSpinFromFile(ui.spin_file)
         spin = Spin(spin_names, nuclei_frequencies, couplings)
         setattr(ui, "spin", spin)
-        simulation = simulate_peaklist(spin.peaklist(), 1000, spin.half_height_width)
+        simulation = simulate_peaklist(spin.peaklist(), ui.points, spin.half_height_width)
 
     else:
         print(f"Failure to update plot. User_data of incorrect format. user_data: {user_data}", file=stderr)
@@ -226,14 +236,14 @@ def load_table(sender, app_data, user_data : "UI") -> None:
                     default_val = col
                     dpg.add_drag_float(label=f'##coupling_{i}_{j}', tag=f'coupling_{i}_{j}', width=-1, 
                                        min_value=min_value, max_value=max_value, default_value=default_val,
-                                       user_data=(spin, j, i), callback=modify_matrix)
+                                       user_data=(ui, j, i), callback=modify_matrix)
     ui.mat_table = table_tag
 
-def modify_matrix(sender, app_data, user_data : tuple[Spin, int, int]) -> None:
+def modify_matrix(sender, app_data, user_data : "tuple[UI, int, int]") -> None:
     """
     Modifies the spin coupling matrix value at (j, i) with the new value.
     """
-    spin : Spin = user_data[0] 
+    spin : Spin = user_data[0].spin
     j : int = user_data[1]
     i : int = user_data[2]
     value = app_data
@@ -241,3 +251,5 @@ def modify_matrix(sender, app_data, user_data : tuple[Spin, int, int]) -> None:
     spin._couplings[j][i] = value
     dpg.set_value(f'coupling_{j}_{i}', value)
     spin._couplings[i][j] = value
+    simulation = simulate_peaklist(spin.peaklist(), user_data[0].points, spin.half_height_width)
+    set_plot_values(simulation)

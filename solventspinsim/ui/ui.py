@@ -1,7 +1,7 @@
 import dearpygui.dearpygui as dpg
 from ui.themes import Theme
-from ui.graphics import matrix_table_settings, plot_window
-from ui.callbacks import set_file_callback, set_nmr_file_callback, test_callback, setter_callback, fit_axes
+from ui.graphics import matrix_table_settings, plot_window, simulation_settings
+from ui.callbacks import set_file_callback, set_nmr_file_callback, test_callback, fit_axes, help_msg
 from ui.components import Button
 from spin.spin import Spin
 from optimize.optimize import optimize_callback
@@ -22,8 +22,26 @@ class UI:
         self.window = None
         self.disabled_theme = None
         self.buttons: dict[str, Button] = {}
+        self._points : int = 1000
         pass        
 
+    # ---------------------------------------------------------------------------- #
+    #                              Getters and Setters                             #
+    # ---------------------------------------------------------------------------- #
+
+    @property
+    def points(self) -> int:
+        return self._points
+    
+    @points.setter
+    def points(self, value) -> None:
+        self._points = value
+        dpg.set_value("points", value)
+    
+    # ---------------------------------------------------------------------------- #
+    #                              Main Render Window                              #
+    # ---------------------------------------------------------------------------- #
+    
     def main_window(self) -> None:
         """
         Initialize main window
@@ -54,9 +72,8 @@ class UI:
                     dpg.add_button(label="Press Me", callback=test_callback)
                     dpg.add_color_picker(label="Color Me", callback=test_callback)
 
-            dpg.add_input_float(label='Field Strength', default_value=500.0, format="%.02f", step=1, 
-                                step_fast=10, tag='field_strength', callback=setter_callback,
-                                user_data=(self, 'field_strength'), tracked=True, width=200)
+            simulation_settings(self)
+
             self.buttons['optimize'] = Button(label='Optimize', callback=optimize_callback, user_data=self, enabled=False)
 
             plot_window()            
