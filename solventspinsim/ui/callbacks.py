@@ -1,4 +1,5 @@
 from pathlib import Path
+from turtle import width
 import dearpygui.dearpygui as dpg
 from simulate.simulate import simulate_peaklist
 from spin.spin import Spin, loadSpinFromFile
@@ -7,6 +8,7 @@ import nmrPype
 import numpy as np
 from ui.components import Button
 from typing import TYPE_CHECKING
+from .themes import Theme
 if TYPE_CHECKING:
     from ui.ui import UI
 
@@ -119,12 +121,44 @@ def update_plot_callback(sender, app_data, user_data: "UI | tuple[str, UI]") -> 
         if fit_axes_button is not None:
             fit_axes_button.enable()
 
-    fit_axes()
     set_plot_values(simulation)
+    fit_axes()
+    create_drag_lines(ui)
     if ui is not None:
         load_table(sender, app_data, ui)
 
-def set_plot_values(simulation : np.ndarray) -> None:
+def create_drag_lines(ui : "UI") -> None:
+    if dpg.get_value('drag_lines_visible'):
+        return
+    
+    nuclei_frequencies = ui.spin.nuclei_frequencies
+    for i, nuclei in enumerate(nuclei_frequencies):
+        # Create a color gradient from blue to red as i increases
+        n = len(nuclei_frequencies)
+        r = int(255 * i / max(n - 1, 1))
+        g = 0
+        b = int(255 * (1 - i / max(n - 1, 1)))
+        color = [r, g, b, 255]
+        dpg.add_drag_line(label=f"Nuclei {ui.spin.spin_names[i]}", color=color,
+                  callback=update_spin_nuclei, user_data=(ui, i), default_value=nuclei, parent='plt')
+    dpg.set_value("drag_lines_visible", True)
+
+def update_spin_nuclei(sender, app_data, user_data : "tuple[UI, int]"):
+    ui : "UI" = user_data[0]
+    index : int = user_data[1]
+    new_value = dpg.get_value(sender)
+    ui.spin._nuclei_frequencies[index] = new_value
+    simulation = simulate_peaklist(ui.spin.peaklist(), ui.points, ui.spin.half_height_width)
+    set_plot_values(simulation)
+
+def fit_axes() -> None:
+    """Fits the axes to the current data."""
+    dpg.fit_axis_data("x_axis")
+    dpg.fit_axis_data("y_axis")
+    dpg.reset_axis_limits_constraints("x_axis")
+    dpg.reset_axis_limits_constraints("y_axis")
+
+def set_plot_values(simulation : "np.ndarray") -> None:
     """
     Sets the simulation data to the main plot.
     """
@@ -134,14 +168,7 @@ def set_plot_values(simulation : np.ndarray) -> None:
     else:
         dpg.add_line_series(x_data, y_data, label="Simulation", parent="y_axis", tag="main_plot")
 
-def fit_axes() -> None:
-    """Fits the axes to the current data."""
-    dpg.fit_axis_data("x_axis")
-    dpg.fit_axis_data("y_axis")
-    dpg.reset_axis_limits_constraints("x_axis")
-    dpg.reset_axis_limits_constraints("y_axis")
-
-def set_nmr_plot_values(nmr_array : np.ndarray) -> None:
+def set_nmr_plot_values(nmr_array : "np.ndarray") -> None:
     """
     Sets the NMR data to the plot.
     Assumes nmr_array is C-contiguous.
@@ -234,9 +261,13 @@ def load_table(sender, app_data, user_data : "UI") -> None:
                 dpg.add_text(spin.spin_names[i], tag=f'row_{i}_header')
                 for j, col in enumerate(row):
                     default_val = col
-                    dpg.add_drag_float(label=f'##coupling_{i}_{j}', tag=f'coupling_{i}_{j}', width=-1, 
-                                       min_value=min_value, max_value=max_value, default_value=default_val,
-                                       user_data=(ui, j, i), callback=modify_matrix)
+                    if i != j:
+                        dpg.add_drag_float(label=f'##coupling_{i}_{j}', tag=f'coupling_{i}_{j}', width=-1, 
+                                        min_value=min_value, max_value=max_value, default_value=default_val,
+                                        user_data=(ui, j, i), callback=modify_matrix)
+                    else:
+                        dpg.add_text(f"", label=f'##coupling_{i}_{j}', tag=f'coupling_{i}_{j}')
+
     ui.mat_table = table_tag
 
 def modify_matrix(sender, app_data, user_data : "tuple[UI, int, int]") -> None:

@@ -1,10 +1,12 @@
+import enum
 from pathlib import Path
 import os
 import dearpygui.dearpygui as dpg
-from ui.callbacks import load_table, help_msg, setter_callback
+from ui.callbacks import load_table, help_msg, setter_callback, test_callback
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ui.ui import UI
+    import numpy as np
 
 def load_static_texture(file : str, texture_tag : int | str = 0) -> int | str:
     if not Path(file).is_file():
@@ -20,6 +22,8 @@ def plot_window() -> None:
         # REQUIRED FOR PLOTTING: create x and y axes
         dpg.add_plot_axis(dpg.mvXAxis, label="x", tag="x_axis")
         dpg.add_plot_axis(dpg.mvYAxis, label="y", tag="y_axis")
+    with dpg.value_registry():
+        dpg.add_bool_value(default_value=False, tag="drag_lines_visible")
 
 def simulation_settings(ui : "UI") -> None:
     with dpg.table(header_row=False):
