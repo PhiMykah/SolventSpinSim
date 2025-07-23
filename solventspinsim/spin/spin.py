@@ -111,6 +111,7 @@ class Spin:
     def nuclei_frequencies(self, value: list[float] | list[int]) -> None:
         if not isinstance(value, list) or not all(isinstance(x, (float, int)) for x in value):
             raise TypeError("nuclei_frequencies must be a list of floats or ints")
+        self._ppm_nuclei_frequencies: list[float] | list[int] = value
         self._nuclei_frequencies: list[float] | list[int] = ppm_to_hz(value, self._field_strength)
 
     # --------------------------------- couplings -------------------------------- #
