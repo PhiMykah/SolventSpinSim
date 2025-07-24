@@ -173,15 +173,20 @@ def set_plot_values(simulation : "np.ndarray", peak_count : int) -> None:
     Sets the simulation data to the main plot.
     """
     x_data, y_data = simulation[0], simulation[1]
-    if dpg.does_item_exist('main_plot'):
-        dpg.set_value('main_plot', [x_data, y_data])
+    if dpg.get_value('main_plot_added'):
+        dpg.set_value('main_plot_series', [x_data, y_data])
     else:
-        dpg.add_line_series(x_data, y_data, label="Simulation", parent="y_axis", tag="main_plot_series")
-    for i in range(peak_count):
-        if dpg.does_item_exist(f"peak_plot_{i}"):
-            dpg.set_value(f"peak_plot_{i}", [x_data, y_data])
+        dpg.add_line_series(x_data, y_data, label="Simulation", parent="main_y_axis", tag="main_plot_series")
+        dpg.set_value('main_plot_added', True)
+
+    
+        if dpg.get_value('peak_plot_added'):
+            for i in range(peak_count):
+                dpg.set_value(f"peak_plot_series_{i}", [x_data, y_data])
         else:
-            dpg.add_line_series(x_data, y_data, label=f'##peak_plot_{i}', parent=f"peak_y_axis_{i}", tag=f"peak_plot_{i}")
+            for i in range(peak_count):
+                dpg.add_line_series(x_data, y_data, label=f'##peak_plot_{i}', parent=f"peak_y_axis_{i}", tag=f"peak_plot_series_{i}")
+            dpg.set_value('peak_plot_added', True)
 
 def set_nmr_plot_values(nmr_array : "np.ndarray") -> None:
     """

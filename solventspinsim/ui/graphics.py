@@ -29,6 +29,8 @@ def plot_window(ui : "UI") -> None:
     with dpg.value_registry():
         dpg.add_bool_value(default_value=False, tag="drag_lines_visible")
         dpg.add_bool_value(default_value=False, tag="drag_points_visible")
+        dpg.add_bool_value(default_value=False, tag='main_plot_added')
+        dpg.add_bool_value(default_value=False, tag='peak_plot_added')
     
 def simulation_settings(ui : "UI") -> None:
     with dpg.table(header_row=False):
