@@ -1,0 +1,64 @@
+import dearpygui.dearpygui as dpg
+
+from .plot import update_simulation_plot, update_plotting_ui
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ui.ui import UI
+
+# ---------------------------------------------------------------------------- #
+#                              Callback Functions                              #
+# ---------------------------------------------------------------------------- #
+
+# ---------------------- Utility and Debug Callbacks ------------------------- #
+
+def test_callback(sender, app_data, user_data) -> None:
+    """Debug callback to print sender, app_data, and user_data."""
+    print(f"sender is: {sender}")
+    print(f"app_data is: {app_data}")
+    print(f"user_data is: {user_data}")
+
+def close_application(sender, app_data, user_data) -> None:
+    """Callback to close all windows and the viewport."""
+    dpg.stop_dearpygui()
+
+def viewport_resize_callback(sender, app_data, user_data) -> None:
+    """Callback to handle viewport resizing events."""
+    current_width = dpg.get_viewport_width()
+    current_height = dpg.get_viewport_height()
+    print(f"Viewport resized to: Width={current_width}, Height={current_height}")
+
+def help_msg(message) -> None:
+    last_item = dpg.last_item()
+    group = dpg.add_group(horizontal=True)
+    dpg.move_item(last_item, parent=group)
+    dpg.capture_next_item(lambda s: dpg.move_item(s, parent=group))
+    t = dpg.add_text("(?)", color=[0, 255, 0])
+    with dpg.tooltip(t):
+        dpg.add_text(message)
+
+# ---------------------- Attribute Setter Callback --------------------------- #
+
+def setter_callback(sender, app_data, user_data : tuple[object, str]) -> None:
+    """
+    Sets the attribute `user_data[1]` of object `user_data[0]` to value app_data.
+    """
+    setattr(user_data[0], user_data[1], app_data)
+
+def set_points_callback(sender, app_data, user_data : "UI") -> None:
+    user_data.points = app_data
+    if not user_data.spin.spin_names:
+        return
+    update_simulation_plot(user_data.spin, user_data.points, user_data.spin.half_height_width, 
+                           user_data.spin._nuclei_number)
+
+def set_field_strength_callback(sender, app_data, user_data : "UI") -> None:
+    user_data.field_strength = app_data
+    if not user_data.spin.spin_names:
+        return
+    user_data.spin.field_strength = app_data
+    user_data.spin.nuclei_frequencies = user_data.spin._ppm_nuclei_frequencies
+
+    update_simulation_plot(user_data.spin, user_data.points, user_data.spin.half_height_width,
+                           user_data.spin._nuclei_number)
+    update_plotting_ui(user_data)

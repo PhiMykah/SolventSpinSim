@@ -1,7 +1,7 @@
 import dearpygui.dearpygui as dpg
 from ui.themes import Theme
 from ui.graphics import matrix_table_settings, plot_window, simulation_settings
-from ui.callbacks import set_file_callback, set_nmr_file_callback, test_callback, fit_axes, help_msg
+from ui.callbacks import set_spin_file, set_nmr_file_callback, test_callback, fit_axes, help_msg
 from ui.components import Button
 from spin.spin import Spin
 from optimize.optimize import optimize_callback
@@ -23,6 +23,8 @@ class UI:
         self.disabled_theme = None
         self.buttons: dict[str, Button] = {}
         self._points : int = 1000
+        self.subplots_tag : str = ""
+        self.plot_tags : dict = {}
         pass        
 
     # ---------------------------------------------------------------------------- #
@@ -49,8 +51,8 @@ class UI:
         Assumes dearpygui's context has been created
         """
             
-        with dpg.file_dialog(directory_selector=False, show=False, callback=set_file_callback, width=800, height=400, 
-                             user_data=(self, 'spin_file', True)) as load_file_dialog:
+        with dpg.file_dialog(directory_selector=False, show=False, callback=set_spin_file, width=800, height=400, 
+                             user_data=self) as load_file_dialog:
             dpg.add_file_extension("", color=(150, 255, 150, 255))
             dpg.add_file_extension("Text Files (*.txt *.csv){.txt,.csv}", color=(0, 255, 255, 255)) 
 
@@ -76,9 +78,11 @@ class UI:
 
             self.buttons['optimize'] = Button(label='Optimize', callback=optimize_callback, user_data=self, enabled=False)
 
-            plot_window()            
+            plot_window(self)            
 
-            self.buttons['fit_axes'] = Button(label='Fit Axes', callback=fit_axes, enabled=False)
+            self.buttons['fit_axes'] = Button(label='Fit Axes', 
+                                              callback= lambda : fit_axes({"x_axis": "main_x_axis", "y_axis": "main_y_axis"}), 
+                                              enabled=False)
 
             dpg.add_separator()
 

@@ -16,16 +16,20 @@ def load_static_texture(file : str, texture_tag : int | str = 0) -> int | str:
         image_width, image_height, image_channels, image_buffer = dpg.load_image(file)
         return dpg.add_static_texture(image_width, image_height, image_buffer, tag=texture_tag)
 
-def plot_window() -> None:
-    with dpg.plot(label="Simulation & Target Plot", height=400, width=-1, tag='plt'):
-        dpg.add_plot_legend()
-        # REQUIRED FOR PLOTTING: create x and y axes
-        dpg.add_plot_axis(dpg.mvXAxis, label="x", tag="x_axis")
-        dpg.add_plot_axis(dpg.mvYAxis, label="y", tag="y_axis")
+def plot_window(ui : "UI") -> None:
+    with dpg.subplots(rows=1, columns=1, label="Simulation & Peaks", width=-1, height=400, tag='subplots') as subplots_tag:
+        # Main plot
+        with dpg.plot(label="##Main Spectrum", tag='main_plot'):
+            dpg.add_plot_legend()
+            # REQUIRED FOR PLOTTING: create x and y axes
+            dpg.add_plot_axis(dpg.mvXAxis, label="x", tag="main_x_axis")
+            dpg.add_plot_axis(dpg.mvYAxis, label="y", tag="main_y_axis")
+    
+    ui.subplots_tag = subplots_tag
     with dpg.value_registry():
         dpg.add_bool_value(default_value=False, tag="drag_lines_visible")
         dpg.add_bool_value(default_value=False, tag="drag_points_visible")
-
+    
 def simulation_settings(ui : "UI") -> None:
     with dpg.table(header_row=False):
         dpg.add_table_column(width=100)
