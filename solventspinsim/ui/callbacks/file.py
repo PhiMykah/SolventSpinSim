@@ -1,7 +1,7 @@
 from sys import stderr
 
 from spin.spin import Spin, loadSpinFromFile
-from .plot import add_subplots, update_plot_callback, set_nmr_plot_values
+from .plot import add_subplots, update_plot_callback, set_nmr_plot_values, zoom_subplots_to_peaks
 from .nmr import load_nmr_array
 
 from typing import TYPE_CHECKING
@@ -28,6 +28,7 @@ def set_spin_file(sender, app_data : dict, user_data : "UI") -> None:
     ui.spin = spin
 
     add_subplots(ui)
+    zoom_subplots_to_peaks(ui, 10.0)
     update_plot_callback(sender, app_data, ui)
 
 def set_nmr_file_callback(sender, app_data, user_data : "tuple[UI, str, bool]") -> None:

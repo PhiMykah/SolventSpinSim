@@ -1,3 +1,4 @@
+from sys import stderr
 import dearpygui.dearpygui as dpg
 import numpy as np
 
@@ -15,18 +16,23 @@ def add_subplots(ui : "UI") -> None:
     """
     Assumes that ui.spin has been set and main plot has been set
     """
-    if not ui.subplots_tag:
-        return
-    
     n_peaks : int = len(ui.spin.spin_names)
     if n_peaks != ui.spin._nuclei_number:
         raise ValueError(f"Number of spin nuclei {n_peaks} not equal to nuclei count {ui.spin._nuclei_number}!")
     
+    if ui.window is None:
+        print("Unable to add subplots to main window, since it does not exist for UI object.", file=stderr)
+        return 
+    
     # Subplots for each peak
-    for i in range(n_peaks):
-        with dpg.plot(label=f"Peak {i+1}", tag=f"peak_plot_{i}", parent=ui.subplots_tag):
-            dpg.add_plot_axis(dpg.mvXAxis, label="x", tag=f"peak_x_axis_{i}")
-            dpg.add_plot_axis(dpg.mvYAxis, label="y", tag=f"peak_y_axis_{i}")
+    with dpg.subplots(rows=1, columns=n_peaks, label="##peak_sub_plots", width=-1, height=400, tag='subplots', parent=ui.window) as subplots_tag:
+        for i in range(n_peaks):
+            with dpg.plot(label=f"Peak {i+1}", tag=f"peak_plot_{i}"):
+                dpg.add_plot_axis(dpg.mvXAxis, label="x", tag=f"peak_x_axis_{i}")
+                dpg.add_plot_axis(dpg.mvYAxis, label="y", tag=f"peak_y_axis_{i}")
+
+    dpg.configure_item('main_plot', before='peak_plot_0')
+    ui.subplots_tag = subplots_tag
 
     # Store subplot tags in UI for later updates
     ui.plot_tags = {
@@ -37,6 +43,36 @@ def add_subplots(ui : "UI") -> None:
         ]
     }
 
+def zoom_subplots_to_peaks(ui: "UI", padding: float = 10.0):
+    """
+    Sets the x-axis limits for each subplot to zoom around the peaks associated with each spin nucleus.
+    Uses the coupling matrix to determine the outer limits.
+    """
+    nuclei_freqs = ui.spin.nuclei_frequencies
+    couplings = np.array(ui.spin.couplings)
+    n = len(nuclei_freqs)
+
+    for i in range(n):
+        nucleus_freq = nuclei_freqs[i]
+        # Get all non-zero couplings for this nucleus
+        nonzero_couplings = np.abs(couplings[i][couplings[i] != 0])
+        if nonzero_couplings.size > 0:
+            max_coupling = np.max(nonzero_couplings)
+            min_x = nucleus_freq - max_coupling - padding
+            max_x = nucleus_freq + max_coupling + padding
+        else:
+            # No couplings, just center around nucleus_freq
+            min_x = nucleus_freq - padding
+            max_x = nucleus_freq + padding
+
+        # Optionally, set y-axis limits as well (here, just a default range)
+        min_y = -0.1
+        max_y = 1.1
+
+        # Set axis limits for subplot i
+        dpg.set_axis_limits(f"peak_x_axis_{i}", min_x, max_x)
+        dpg.set_axis_limits(f"peak_y_axis_{i}", min_y, max_y)
+        
 def update_plot_callback(sender, app_data, user_data: "UI") -> None:
     """
     Updates the simulation plot based on the provided user_data.
@@ -121,25 +157,32 @@ def update_spin_nuclei(sender, app_data, user_data : "tuple[UI, int]"):
     # Update all coupling drag points related to this nuclei frequency to move alongside this drag line
     n = len(ui.spin.spin_names)
     for j in range(n):
-        if j == index:
+        if j != index:
             continue
         for p in range(len(plot_tags)):
-            # Update both left and right drag points for this nuclei frequency
+            nuclei_tag = f"nuclei_{p}{ui.spin.spin_names[j]}"
+            if dpg.does_item_exist(nuclei_tag):
+                dpg.set_value(nuclei_tag, new_value)
+
+            # Update both left and right drag points for each nuclei frequency
             for tag_type, sign in (('r', 1), ('l', -1)):
                 tag = f'coupling_drag_{p}{tag_type}_{index}_{j}'
                 if dpg.does_item_exist(tag):
                     coupling_value = ui.spin._couplings[index][j]
-                    dpg.set_value(tag, (new_value + sign * coupling_value, COUPLING_DRAG_HEIGHT))
+                    dpg.set_value(tag, (new_value + sign * coupling_value, COUPLING_DRAG_HEIGHT))   
 
     # Simulate new spectrum and plot
     update_simulation_plot(ui.spin, ui.points, ui.spin.half_height_width,
                            ui.spin._nuclei_number)
+    zoom_subplots_to_peaks(ui, 10)
 
 def update_coupling(sender, app_data, user_data : "tuple[UI, tuple[int, int], str]"):
     ui : "UI" = user_data[0] # UI object containing spin matrix to handle changes 
     cell_row, cell_col = user_data[1] # coupling row and column indices
     nuclei_value: float = ui.spin._nuclei_frequencies[cell_row]
     other_drag_point: str = user_data[2] # string id of mirrored drag point
+
+    plot_tags = [ui.plot_tags["main"]["plot"]] + [p["plot"] for p in ui.plot_tags["peaks"]]
 
     new_x_value, _ = dpg.get_value(sender)
     offset : float = new_x_value - nuclei_value # Offset coupling value from nuclei center 
@@ -157,6 +200,20 @@ def update_coupling(sender, app_data, user_data : "tuple[UI, tuple[int, int], st
     # Set values on matrix table
     dpg.set_value(f'coupling_{cell_col}_{cell_row}', offset)
     dpg.set_value(f'coupling_{cell_row}_{cell_col}', offset)
+
+    # Update all coupling drag points related to this nuclei frequency to move alongside this drag line
+    n = len(ui.spin.spin_names)
+    for j in range(n):
+        if j != cell_row:
+            continue
+        for p in range(len(plot_tags)):
+            # Update both left and right drag points for each nuclei frequency
+            for tag_type, sign in (('r', 1), ('l', -1)):
+                tag = f'coupling_drag_{p}{tag_type}_{cell_row}_{j}'
+                if dpg.does_item_exist(tag):
+                    coupling_value = ui.spin._couplings[cell_row][cell_col]
+                    dpg.set_value(tag, (new_x_value + sign * coupling_value, COUPLING_DRAG_HEIGHT))   
+
 
     # Simulate new spectrum and plot
     update_simulation_plot(ui.spin, ui.points, ui.spin.half_height_width, ui.spin._nuclei_number)
@@ -179,14 +236,13 @@ def set_plot_values(simulation : "np.ndarray", peak_count : int) -> None:
         dpg.add_line_series(x_data, y_data, label="Simulation", parent="main_y_axis", tag="main_plot_series")
         dpg.set_value('main_plot_added', True)
 
-    
-        if dpg.get_value('peak_plot_added'):
-            for i in range(peak_count):
-                dpg.set_value(f"peak_plot_series_{i}", [x_data, y_data])
-        else:
-            for i in range(peak_count):
-                dpg.add_line_series(x_data, y_data, label=f'##peak_plot_{i}', parent=f"peak_y_axis_{i}", tag=f"peak_plot_series_{i}")
-            dpg.set_value('peak_plot_added', True)
+    if dpg.get_value('peak_plot_added'):
+        for i in range(peak_count):
+            dpg.set_value(f"peak_plot_series_{i}", [x_data, y_data])
+    else:
+        for i in range(peak_count):
+            dpg.add_line_series(x_data, y_data, label=f'##peak_plot_{i}', parent=f"peak_y_axis_{i}", tag=f"peak_plot_series_{i}")
+        dpg.set_value('peak_plot_added', True)
 
 def set_nmr_plot_values(nmr_array : "np.ndarray") -> None:
     """
