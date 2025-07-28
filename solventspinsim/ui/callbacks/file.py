@@ -28,7 +28,7 @@ def set_spin_file(sender, app_data : dict, user_data : "UI") -> None:
     ui.spin = spin
 
     add_subplots(ui)
-    zoom_subplots_to_peaks(ui, 10.0)
+    zoom_subplots_to_peaks(ui)
     update_plot_callback(sender, app_data, ui)
 
 def set_nmr_file_callback(sender, app_data, user_data : "tuple[UI, str, bool]") -> None:

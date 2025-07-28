@@ -44,22 +44,4 @@ def simulation_settings(ui : "UI") -> None:
             dpg.add_input_int(label='Points', default_value=1000, step=1, step_fast=100, 
                               tag='points', callback=set_points_callback, user_data=ui, tracked=True)
             help_msg("Number of points in entire spectrum to simulate.")
-
-def matrix_table_settings(ui : "UI") -> None:
-    with dpg.table(header_row=False):
-        dpg.add_table_column(width=100)
-        dpg.add_table_column(width=100)
-        dpg.add_table_column(width=100)
-
-        with dpg.table_row():
-            dpg.add_text('Minimum Frequency')
-            help_msg("Minimum frequency for the coupling matrix and chemical shift sliders.")
-
-            dpg.add_text('Maximum Frequency')
-            help_msg("Maximum frequency for the coupling matrix and chemical shift sliders.")
-
-        with dpg.table_row():
-            dpg.add_drag_float(label='##Minimum Frequency', tag='table_min_freq', default_value=-100.0, width=-1)
-            dpg.add_drag_float(label='##Maximum Frequency', tag='table_max_freq', default_value=100.0, width=-1)
-            dpg.add_button(label='Update Matrix', callback=load_table, user_data=ui)
             

@@ -1,6 +1,6 @@
 import dearpygui.dearpygui as dpg
 
-from .plot import update_simulation_plot, update_plotting_ui
+from .plot import update_simulation_plot, update_plotting_ui, zoom_subplots_to_peaks
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -37,6 +37,21 @@ def help_msg(message) -> None:
     with dpg.tooltip(t):
         dpg.add_text(message)
 
+def show_item_callback(sender, app_data, user_data : int | str) -> None:
+    if dpg.does_item_exist(user_data):
+        dpg.show_item(user_data)
+
+def hide_item_callback(sender, app_data, user_data: int | str) -> None:
+    if dpg.does_item_exist(user_data):
+        dpg.hide_item(user_data)
+
+def toggle_visibility_callback(sender, app_data, user_data: int | str) -> None:
+    if dpg.does_item_exist(user_data):
+        if dpg.is_item_shown(user_data):
+            dpg.hide_item(user_data)
+        else:
+            dpg.show_item(user_data)
+
 # ---------------------- Attribute Setter Callback --------------------------- #
 
 def setter_callback(sender, app_data, user_data : tuple[object, str]) -> None:
@@ -62,3 +77,4 @@ def set_field_strength_callback(sender, app_data, user_data : "UI") -> None:
     update_simulation_plot(user_data.spin, user_data.points, user_data.spin.half_height_width,
                            user_data.spin._nuclei_number)
     update_plotting_ui(user_data)
+    zoom_subplots_to_peaks(user_data)

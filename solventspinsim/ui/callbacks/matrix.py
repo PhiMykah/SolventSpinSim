@@ -2,11 +2,32 @@ import dearpygui.dearpygui as dpg
 import numpy as np
 
 from .plot import update_simulation_plot, COUPLING_DRAG_HEIGHT
+from .callbacks import help_msg
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ui.ui import UI
     from spin.spin import Spin
+
+def matrix_table(ui : "UI") -> None:
+    with dpg.window(label='Spin Matrix', show=False, tag='matrix_window'):
+        
+        with dpg.table(header_row=False):
+            dpg.add_table_column(width=100)
+            dpg.add_table_column(width=100)
+            dpg.add_table_column(width=100)
+
+            with dpg.table_row():
+                dpg.add_text('Minimum Frequency')
+                help_msg("Minimum frequency for the coupling matrix and chemical shift sliders.")
+
+                dpg.add_text('Maximum Frequency')
+                help_msg("Maximum frequency for the coupling matrix and chemical shift sliders.")
+
+            with dpg.table_row():
+                dpg.add_drag_float(label='##Minimum Frequency', tag='table_min_freq', default_value=-100.0, width=-1)
+                dpg.add_drag_float(label='##Maximum Frequency', tag='table_max_freq', default_value=100.0, width=-1)
+                dpg.add_button(label='Update Matrix', callback=load_table, user_data=ui)
 
 def load_table(sender, app_data, user_data : "UI") -> None:
     """
@@ -37,7 +58,7 @@ def load_table(sender, app_data, user_data : "UI") -> None:
     
     with dpg.table(tag=table_tag, header_row=True, row_background=False,
               borders_innerH=True, borders_outerH=True, borders_innerV=True,
-              borders_outerV=True, delay_search=True, parent=ui.window):
+              borders_outerV=True, delay_search=True, parent='matrix_window'):
         dpg.add_table_column(label="##Top Left Corner")
         for atom in spin.spin_names:
             dpg.add_table_column(label=str(atom))

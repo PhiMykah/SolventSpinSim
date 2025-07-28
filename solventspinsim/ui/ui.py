@@ -1,7 +1,7 @@
 import dearpygui.dearpygui as dpg
 from ui.themes import Theme
-from ui.graphics import matrix_table_settings, plot_window, simulation_settings
-from ui.callbacks import set_spin_file, set_nmr_file_callback, test_callback, fit_axes, help_msg
+from ui.graphics import plot_window, simulation_settings
+from ui.callbacks import set_spin_file, set_nmr_file_callback, test_callback, fit_axes, show_item_callback
 from ui.components import Button
 from spin.spin import Spin
 from optimize.optimize import optimize_callback
@@ -61,7 +61,7 @@ class UI:
             dpg.add_file_extension("", color=(150, 255, 150, 255))
             dpg.add_file_extension("FT1 Files (*.ft1){.ft1,}", color=(0, 255, 255, 255))
 
-        with dpg.window(label='Primary Window') as main_window:
+        with dpg.window(label='Primary Window', no_scroll_with_mouse=False) as main_window:
             self.window = main_window
             with dpg.menu_bar():
                 with dpg.menu(label="File"):
@@ -73,6 +73,9 @@ class UI:
                     dpg.add_checkbox(label="Pick Me", callback=test_callback)
                     dpg.add_button(label="Press Me", callback=test_callback)
                     dpg.add_color_picker(label="Color Me", callback=test_callback)
+                
+                with dpg.menu(label='View'):
+                    dpg.add_menu_item(label='Show Spin Matrix Table', callback=show_item_callback, user_data='matrix_window')
 
             simulation_settings(self)
 
@@ -83,11 +86,6 @@ class UI:
             self.buttons['fit_axes'] = Button(label='Fit Axes', 
                                               callback= lambda : fit_axes({"x_axis": "main_x_axis", "y_axis": "main_y_axis"}), 
                                               enabled=False)
-
-            dpg.add_separator()
-
-            matrix_table_settings(self)
-            
             
         # dpg.set_viewport_resize_callback(callback=viewport_resize_callback)   
         dpg.set_primary_window(main_window, True)
