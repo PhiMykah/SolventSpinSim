@@ -5,7 +5,7 @@ import numpy as np
 from ui.components import Button
 from simulate.simulate import simulate_peaklist
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 if TYPE_CHECKING:
     from ui.ui import UI
     from spin.spin import Spin
@@ -26,12 +26,16 @@ def add_subplots(ui : "UI") -> None:
         return 
     
     # Subplots for each peak
-    with dpg.subplots(rows=1, columns=n_peaks, label="##peak_sub_plots", width=-1, height=400, 
-                      tag='subplots', parent=ui.window, link_rows=True, before='matrix_group') as subplots_tag:
-        for i, spin_name in enumerate(ui.spin.spin_names):
-            with dpg.plot(label=f"Nuclei {spin_name}", tag=f"peak_plot_{i}"):
-                dpg.add_plot_axis(dpg.mvXAxis, label="x", tag=f"peak_x_axis_{i}")
-                dpg.add_plot_axis(dpg.mvYAxis, label="y", tag=f"peak_y_axis_{i}")
+    with dpg.child_window(width=-1, height=420, horizontal_scrollbar=True, autosize_x=False, autosize_y=False, parent=ui.window) as scroll_area:
+        with dpg.subplots(rows=1, columns=n_peaks, label="##peak_sub_plots", width=n_peaks*400, height=400, 
+                        tag='subplots', parent=scroll_area, link_rows=True) as subplots_tag:
+            for i, spin_name in enumerate(ui.spin.spin_names):
+                with dpg.plot(label=f"Nuclei {spin_name}", tag=f"peak_plot_{i}"):
+                    dpg.add_plot_legend()
+                    dpg.add_plot_axis(dpg.mvXAxis, label="x", tag=f"peak_x_axis_{i}")
+                    y_label : Literal['y'] | Literal['##y'] = "y" if i == 0 else "##y"
+                    dpg.add_plot_axis(dpg.mvYAxis, label=y_label, tag=f"peak_y_axis_{i}",
+                                      no_tick_labels=(i != 0))
 
     dpg.configure_item('main_plot', before='peak_plot_0')
     ui.subplots_tag = subplots_tag

@@ -1,7 +1,7 @@
 import dearpygui.dearpygui as dpg
 import numpy as np
 
-from .plot import update_simulation_plot, COUPLING_DRAG_HEIGHT
+from .plot import update_simulation_plot, update_plotting_ui, zoom_subplots_to_peaks, fit_axes, COUPLING_DRAG_HEIGHT
 from .callbacks import help_msg
 
 from typing import TYPE_CHECKING
@@ -101,3 +101,6 @@ def modify_matrix(sender, app_data, user_data : "tuple[UI, int, int, float]") ->
     spin._couplings[i][j] = value
     update_simulation_plot(spin, user_data[0].points, spin.half_height_width,
                            spin._nuclei_number)
+    update_plotting_ui(user_data[0])
+    zoom_subplots_to_peaks(user_data[0])
+    fit_axes(user_data[0].plot_tags["main"])
