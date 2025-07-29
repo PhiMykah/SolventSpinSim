@@ -74,7 +74,6 @@ def zoom_subplots_to_peaks(ui: "UI", padding: float = 10.0):
         # Set axis limits for subplot i
         dpg.set_axis_limits(f"peak_x_axis_{i}", min_x, max_x)
         dpg.set_axis_limits(f"peak_y_axis_{i}", min_y, max_y)
-    fit_axes(ui.plot_tags["main"])
         
 def update_plot_callback(sender, app_data, user_data: "UI") -> None:
     """

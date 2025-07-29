@@ -38,10 +38,10 @@ def simulation_settings(ui : "UI") -> None:
         with dpg.table_row():
             dpg.add_input_float(label='Field Strength', default_value=500.0, format="%.02f", step=1, 
                                 step_fast=10, tag='field_strength', callback=set_field_strength_callback,
-                                user_data=ui, tracked=True)
+                                user_data=ui)
             help_msg("Field Strength in Hz of the magnet to simulate.")
 
             dpg.add_input_int(label='Points', default_value=1000, step=1, step_fast=100, 
-                              tag='points', callback=set_points_callback, user_data=ui, tracked=True)
+                              tag='points', callback=set_points_callback, user_data=ui)
             help_msg("Number of points in entire spectrum to simulate.")
             

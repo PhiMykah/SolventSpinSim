@@ -61,7 +61,7 @@ class UI:
             dpg.add_file_extension("", color=(150, 255, 150, 255))
             dpg.add_file_extension("FT1 Files (*.ft1){.ft1,}", color=(0, 255, 255, 255))
 
-        with dpg.window(label='Primary Window', no_scroll_with_mouse=False) as main_window:
+        with dpg.window(label='Primary Window') as main_window:
             self.window = main_window
             with dpg.menu_bar():
                 with dpg.menu(label="File"):

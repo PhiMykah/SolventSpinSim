@@ -1,6 +1,6 @@
 import dearpygui.dearpygui as dpg
 
-from .plot import update_simulation_plot, update_plotting_ui, zoom_subplots_to_peaks
+from .plot import update_simulation_plot, update_plotting_ui, zoom_subplots_to_peaks, fit_axes
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -78,3 +78,4 @@ def set_field_strength_callback(sender, app_data, user_data : "UI") -> None:
                            user_data.spin._nuclei_number)
     update_plotting_ui(user_data)
     zoom_subplots_to_peaks(user_data)
+    fit_axes(user_data.plot_tags["main"])
