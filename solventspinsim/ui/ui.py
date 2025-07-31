@@ -57,7 +57,7 @@ class UI:
             dpg.add_file_extension("Text Files (*.txt *.csv){.txt,.csv}", color=(0, 255, 255, 255)) 
 
         with dpg.file_dialog(directory_selector=False, show=False, callback=set_nmr_file_callback, width=800, height=400,
-                             user_data=(self, 'nmr_file', True)) as load_nmr_dialog:
+                             user_data=self) as load_nmr_dialog:
             dpg.add_file_extension("", color=(150, 255, 150, 255))
             dpg.add_file_extension("FT1 Files (*.ft1){.ft1,}", color=(0, 255, 255, 255))
 

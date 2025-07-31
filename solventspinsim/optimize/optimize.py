@@ -1,9 +1,9 @@
 import numpy as np
 import nmrPype
-from scipy.optimize import dual_annealing
+from scipy.optimize import dual_annealing, differential_evolution
 from simulate.simulate import simulate_peaklist
 from optimize.types import PeakArray
-from ui.callbacks import set_nmr_plot_values, set_plot_values
+from ui.callbacks import set_nmr_plot_values, set_plot_values, zoom_subplots_to_peaks
 from spin.spin import Spin, loadSpinFromFile
 from sys import stderr
 
@@ -35,7 +35,7 @@ def objective_function(params : np.ndarray | list, nmr_array : np.ndarray, spin 
     difference = np.sqrt(np.mean((np.flip(sim_y) - nmr_y) ** 2))
 
     new_simulation = np.vstack((nmr_x, np.flip(sim_y)))
-    set_plot_values(new_simulation)
+    set_plot_values(new_simulation, new_spin._nuclei_number)
     set_nmr_plot_values(np.vstack((nmr_x, nmr_y)))
 
     return difference
@@ -99,7 +99,7 @@ def optimize_simulation(nmr_file : str, spin_matrix_file : str, field_strength :
 
     bounds = freq_bounds + matrix_bounds + sw_bounds + obs_bounds + w_bounds
 
-    result = dual_annealing(objective_function, bounds, (nmr_array, spin, num_of_freq, matrix_shape, matrix_size, points, freq_limits))
+    result = differential_evolution(objective_function, bounds, (nmr_array, spin, num_of_freq, matrix_shape, matrix_size, points, freq_limits))
 
     optimized_params = result.x
     
@@ -127,4 +127,5 @@ def optimize_callback(sender, app_data, user_data):
 
     optimized_spin = optimize_simulation(nmr_file, spin_matrix_file, field_strength)
 
+    zoom_subplots_to_peaks(user_data)
     setattr(user_data, "spin", optimized_spin)

@@ -90,10 +90,10 @@ def update_plot_callback(sender, app_data, user_data: "UI") -> None:
         optimize_button : Button | None = ui.buttons.get('optimize', None)
         fit_axes_button : Button | None = ui.buttons.get('fit_axes', None)
 
-        if optimize_button is not None:
+        if (optimize_button is not None) and dpg.does_item_exist('nmr_plot') and not optimize_button.is_enabled:
             optimize_button.enable()
         
-        if fit_axes_button is not None:
+        if fit_axes_button is not None and not fit_axes_button.is_enabled:
             fit_axes_button.enable()
 
     update_simulation_plot(ui.spin, ui.points, ui.spin.half_height_width, ui.spin._nuclei_number)
@@ -268,7 +268,7 @@ def set_nmr_plot_values(nmr_array : "np.ndarray") -> None:
     else:
         dpg.add_line_series(nmr_array[0], nmr_array[1], label='Real Data', parent="main_y_axis", tag="nmr_plot")
 
-def update_simulation_plot(spin : "Spin", points : int, hhw : int | float, peak_count) -> None:
+def update_simulation_plot(spin : "Spin", points : int, hhw : int | float, peak_count : int) -> None:
     """
     Simulates the spectrum and updates the plot for the given UI object.    
     """
