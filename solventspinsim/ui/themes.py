@@ -2,6 +2,7 @@ import dearpygui.dearpygui as dpg
 
 class Theme:
     _disabled_theme = None
+    _red_line_theme = None
 
     @classmethod
     def disabled_theme(cls):
@@ -19,3 +20,22 @@ class Theme:
                     dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, [165, 178, 194])
             cls._disabled_theme = disabled_theme
         return cls._disabled_theme
+    
+    @classmethod
+    def red_line_theme(cls):
+        """
+        Load or access the red-line plot theme
+
+        Assumes that the dpg context has been created.
+        """
+        if cls._red_line_theme is None:
+            with dpg.theme() as red_line_theme:
+                with dpg.theme_component(dpg.mvLineSeries):
+                    dpg.add_theme_color(dpg.mvPlotCol_Line, (255, 0, 0), category=dpg.mvThemeCat_Plots)
+                with dpg.theme_component(dpg.mvStemSeries):
+                    dpg.add_theme_color(dpg.mvPlotCol_Line, (255, 0, 0), category=dpg.mvThemeCat_Plots)
+                with dpg.theme_component(dpg.mvScatterSeries):
+                    dpg.add_theme_color(dpg.mvPlotCol_Line, (255, 0, 0), category=dpg.mvThemeCat_Plots)
+
+            cls._red_line_theme = red_line_theme
+        return cls._red_line_theme

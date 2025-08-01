@@ -106,6 +106,7 @@ class UI:
         """
         dpg.create_context()
         Theme.disabled_theme()
+        Theme.red_line_theme()
         dpg.create_viewport(title=self.title, decorated=True, **viewport_kwargs)
         dpg.setup_dearpygui()
 
