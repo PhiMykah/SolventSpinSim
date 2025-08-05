@@ -1,12 +1,16 @@
-import enum
 from pathlib import Path
 import os
 import dearpygui.dearpygui as dpg
-from ui.callbacks import load_table, help_msg, set_field_strength_callback, set_points_callback, setter_callback, test_callback
+
+from ui.components import Button
+from ui.callbacks import (load_table, help_msg, set_field_strength_callback, 
+                          set_points_callback, set_water_range_callback, 
+                          setter_callback, test_callback)
+from optimize.optimize import optimize_callback
+
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ui.ui import UI
-    import numpy as np
 
 def load_static_texture(file : str, texture_tag : int | str = 0) -> int | str:
     if not Path(file).is_file():
@@ -30,7 +34,21 @@ def plot_window(ui : "UI") -> None:
         dpg.add_bool_value(default_value=False, tag='main_plot_added')
         dpg.add_bool_value(default_value=False, tag='peak_plot_added')
     
+    dpg.add_drag_line(label=f"Water Left Limit", tag='water_drag_left', show=False,
+                    callback=set_water_range_callback, user_data=(ui, 'left'),
+                    default_value=dpg.get_value("water_left_value"), parent='main_plot')
+    
+    center = (dpg.get_value("water_left_value") + dpg.get_value("water_right_value")) / 2
+
+    dpg.add_drag_line(label=f"Water Center Line", tag='water_center_line', color=(255, 255, 255, 50),
+                      show=False, default_value=center, parent='main_plot', no_inputs=True, no_cursor=True)
+    
+    dpg.add_drag_line(label=f"Water Right Limit", tag='water_drag_right', show=False,
+                    callback=set_water_range_callback, user_data=(ui, 'right'), 
+                    default_value=dpg.get_value("water_right_value"), parent='main_plot')
+    
 def simulation_settings(ui : "UI") -> None:
+    dpg.add_text(default_value='Simulation Settings', tag='sim_settings_title')
     with dpg.table(header_row=False):
         dpg.add_table_column(width=100)
         dpg.add_table_column(width=100)
@@ -44,4 +62,25 @@ def simulation_settings(ui : "UI") -> None:
             dpg.add_input_int(label='Points', default_value=1000, step=1, step_fast=100, 
                               tag='points', callback=set_points_callback, user_data=ui)
             help_msg("Number of points in entire spectrum to simulate.")
-            
+
+def optimization_settings(ui : "UI") -> None:
+    dpg.add_text(default_value='Optimization Settings', tag='opt_settings_title')
+
+    with dpg.value_registry():
+        dpg.add_float_value(default_value=0.0, tag="water_left_value")
+        dpg.add_float_value(default_value=100.0, tag="water_right_value")
+
+    with dpg.table(header_row=False):
+        dpg.add_table_column(width=100)
+        dpg.add_table_column(width=100)
+
+        with dpg.table_row():
+            dpg.add_drag_float(label='Water Left Limit', format="%.02f", source='water_left_value',
+                               tag='water_left', callback=set_water_range_callback, user_data=(ui, 'left'))
+            help_msg("Leftmost region of the water signal peak")
+
+            dpg.add_drag_float(label='Water Right Limit', format="%.02f", source='water_right_value',
+                               tag='water_right', callback=set_water_range_callback, user_data=(ui, 'right'))
+            help_msg("Rightmost region of the water signal peak")
+    
+    ui.buttons['optimize'] = Button(label='Optimize', callback=optimize_callback, user_data=ui, enabled=False)

@@ -5,7 +5,9 @@ from spin.spin import Spin, loadSpinFromFile
 from .plot import ( add_subplots, update_plot_callback, set_nmr_plot_values, 
                      zoom_subplots_to_peaks, update_simulation_plot, fit_axes ) 
 from .nmr import load_nmr_array
-from .callbacks import set_points_callback
+from .callbacks import set_points_callback, set_water_range_callback
+from scipy.signal import find_peaks
+from numpy import argmax
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -61,3 +63,13 @@ def set_nmr_file_callback(sender, app_data, user_data : "UI") -> None:
             fit_axes_button.enable()
 
     fit_axes({"x_axis": "main_x_axis", "y_axis": "main_y_axis"})
+
+    highest_peak_index = argmax(nmr_array[1])
+    water_peak_x_value = nmr_array[0][highest_peak_index]
+
+    set_water_range_callback(sender, water_peak_x_value-100.0, (user_data, 'left'))
+    set_water_range_callback(sender, water_peak_x_value+100.0, (user_data, 'right'))
+    
+    dpg.show_item('water_drag_left')
+    dpg.show_item('water_center_line')
+    dpg.show_item('water_drag_right')

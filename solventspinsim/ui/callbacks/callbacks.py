@@ -5,6 +5,7 @@ from .plot import update_simulation_plot, update_plotting_ui, zoom_subplots_to_p
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ui.ui import UI
+    from typing import Literal
 
 # ---------------------------------------------------------------------------- #
 #                              Callback Functions                              #
@@ -79,3 +80,31 @@ def set_field_strength_callback(sender, app_data, user_data : "UI") -> None:
     update_plotting_ui(user_data)
     zoom_subplots_to_peaks(user_data)
     fit_axes(user_data.plot_tags["main"])
+
+def set_water_range_callback(sender, app_data, user_data : "tuple[UI, Literal['left'] | Literal['right']]"):
+    ui : "UI" = user_data[0]
+    side : "Literal['left'] | Literal['right']" = user_data[1]
+
+    if sender == 'water_drag_left' or sender == 'water_drag_right':
+        value = dpg.get_value(sender)
+    else: 
+        value = app_data
+        
+    if side == 'left':
+        start = value
+        end = value + 1
+        if dpg.get_value('water_right_value') > start:
+            end = dpg.get_value('water_right_value')
+    else:
+        start = value - 1
+        end = value
+        if dpg.get_value('water_left_value') < end:
+            start = dpg.get_value('water_left_value')
+    
+    ui.water_range = (start, end)
+
+    dpg.set_value('water_left_value', start)
+    dpg.set_value('water_right_value', end)
+    dpg.set_value('water_drag_left', start)
+    dpg.set_value('water_drag_right', end)
+    dpg.set_value('water_center_line', (start + end) / 2)

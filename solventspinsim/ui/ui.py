@@ -1,10 +1,10 @@
 import dearpygui.dearpygui as dpg
 from ui.themes import Theme
-from ui.graphics import plot_window, simulation_settings
+from ui.graphics import plot_window, simulation_settings, optimization_settings
 from ui.callbacks import set_spin_file, set_nmr_file_callback, test_callback, fit_axes, show_item_callback
 from ui.components import Button
 from spin.spin import Spin
-from optimize.optimize import optimize_callback
+
 from pathlib import Path
 ASSETS_DIR = (Path(__file__).parent.parent / 'assets').resolve() # Directory of all package assets
 
@@ -25,6 +25,7 @@ class UI:
         self._points : int = 1000
         self.subplots_tag : str = ""
         self.plot_tags : dict = {}
+        self.water_range : tuple[float, ...] = ()
         pass        
 
     # ---------------------------------------------------------------------------- #
@@ -79,7 +80,9 @@ class UI:
 
             simulation_settings(self)
 
-            self.buttons['optimize'] = Button(label='Optimize', callback=optimize_callback, user_data=self, enabled=False)
+            dpg.add_separator()
+
+            optimization_settings(self)
 
             plot_window(self)            
 
