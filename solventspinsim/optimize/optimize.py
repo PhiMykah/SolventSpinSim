@@ -1,5 +1,6 @@
 from re import M
 from turtle import right
+from gemmi import Intensities
 import numpy as np
 from sys import stderr
 import nmrPype
@@ -53,7 +54,7 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
         real_x = nmr_array[0][start:end]
         real_y = nmr_array[1][start:end]
 
-        print(f"({start}, {end}) -> ({real_x[0]}, {real_x[-1]})", file=stderr)
+        # print(f"({start}, {end}) -> ({real_x[0]}, {real_x[-1]})", file=stderr)
 
         if dpg.does_item_exist('main_x_axis'):
             if dpg.does_item_exist('region_line_left'):
@@ -64,29 +65,25 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
             # Draw new region lines
             dpg.add_inf_line_series(real_x[0], label='Region Start', parent='main_x_axis', tag='region_line_left')
             dpg.add_inf_line_series(real_x[-1], label='Region End', parent='main_x_axis', tag='region_line_right')
-            dpg.bind_item_theme('region_line_left', Theme.red_line_theme())
-            dpg.bind_item_theme('region_line_right', Theme.red_line_theme())
+            # dpg.bind_item_theme('region_line_left', Theme.red_line_theme())
+            # dpg.bind_item_theme('region_line_right', Theme.red_line_theme())
 
         def quadrant_objective(params):
-            couplings, spec_width, obs, hhw = unpack_params(params, matrix_size, matrix_shape)
+            couplings, intensities, spec_width, obs, hhw = unpack_params(params, matrix_size, matrix_shape)
             new_spin = Spin(spin_names, list(spin._nuclei_frequencies), couplings, hhw, spin.field_strength)
-            simulation = simulate_peaklist(new_spin.peaklist(), len(real_x))
-            sim_y = simulation[1]
-            # Scale y for fair comparison
-            if np.ptp(sim_y) != 0:
-                scale = np.ptp(real_y)/ np.ptp(sim_y)
-                sim_y_scaled = sim_y * scale
+            simulation = simulate_peaklist(new_spin.peaklist(list(intensities)), len(real_x), hhw, (real_x[0],real_x[-1]))
+            sim_y = simulation[1][::-1]
+            if not dpg.does_item_exist('sim_opt_series'):
+                dpg.add_line_series(real_x, sim_y, label='Simulation Slice', parent='opt_y_axis', tag='sim_opt_series')
             else:
-                sim_y_scaled = sim_y
-            if not dpg.get_value('opt_series_added'):
-                dpg.add_line_series(real_x, sim_y_scaled, label='Simulation Slice', parent='opt_y_axis', tag='sim_opt_series')
-                dpg.add_line_series(real_x, real_y, label='Real Slice', parent='opt_x_axis', tag='real_opt_series')
-                dpg.set_value('opt_series_added', True)
+                dpg.set_value('sim_opt_series', [real_x, sim_y])
+
+            if not dpg.does_item_exist('real_opt_series'):
+                dpg.add_line_series(real_x, real_y, label='Real Slice', parent='opt_y_axis', tag='real_opt_series')
             else:
-                dpg.set_value('sim_opt_series', [real_x, sim_y_scaled])
                 dpg.set_value('real_opt_series', [real_x, real_y])
 
-            return np.sqrt(np.mean((sim_y_scaled - real_y) ** 2))
+            return np.sqrt(np.mean((sim_y - real_y) ** 2))
         
         result = minimize(quadrant_objective, init_params, method='L-BFGS-B')
         optimized_params_list.append(result.x)
@@ -133,15 +130,16 @@ def optimize_simulation(nmr_file : str, spin_matrix_file : str, field_strength :
     spin = Spin(spin_names, nuclei_frequencies, couplings, half_height_width=init_hhw, field_strength=field_strength)
 
     initial_values : list[float] = [init_sw, init_obs, init_hhw]
-    init_params : np.ndarray = np.concatenate((couplings.flatten(), initial_values))
+    initial_intensities = [1.0] * spin._nuclei_number
+    init_params : np.ndarray = np.concatenate((couplings.flatten(), initial_intensities, initial_values))
     matrix_shape = couplings.shape
     matrix_size : int = couplings.size 
 
     optimized_params = section_optimization(nmr_array, spin, matrix_shape, matrix_size, init_params, water_range)
     
-    new_couplings, new_spec_width, new_obs, new_hhw = unpack_params(optimized_params, matrix_size, matrix_shape)
+    new_couplings, intensities, new_spec_width, new_obs, new_hhw = unpack_params(optimized_params, matrix_size, matrix_shape)
     
-    optimized_spin = Spin(spin_names, nuclei_frequencies, new_couplings, new_hhw, field_strength)
+    optimized_spin = Spin(spin_names, nuclei_frequencies, new_couplings, new_hhw, field_strength, list(intensities))
     print('Optimization Complete!', file=stderr)
     return optimized_spin
 
@@ -175,8 +173,10 @@ def optimize_callback(sender, app_data, user_data):
     setattr(user_data, "spin", optimized_spin)
     update_simulation_plot(optimized_spin, user_data.points, optimized_spin.half_height_width, optimized_spin._nuclei_number)
 
+
 def unpack_params(params : np.ndarray | list, matrix_size : int, matrix_shape : tuple):
     cMatrix_flat = np.array(params[:matrix_size])
-    sw, obs, w = params[matrix_size:]
+    intensities = np.array(params[matrix_size:matrix_size+matrix_shape[0]])
+    sw, obs, w = params[matrix_size+matrix_shape[0]:]
 
-    return cMatrix_flat.reshape(matrix_shape), sw, obs, w
+    return cMatrix_flat.reshape(matrix_shape), intensities, sw, obs, w

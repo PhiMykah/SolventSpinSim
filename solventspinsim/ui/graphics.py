@@ -35,8 +35,9 @@ def plot_window(ui : "UI") -> None:
         dpg.add_bool_value(default_value=False, tag='peak_plot_added')
     
     dpg.add_drag_line(label=f"Water Left Limit", tag='water_drag_left', show=False,
-                    callback=set_water_range_callback, user_data=(ui, 'left'),
-                    default_value=dpg.get_value("water_left_value"), parent='main_plot')
+                      color=(255, 255, 255, 255),
+                      callback=set_water_range_callback, user_data=(ui, 'left'),
+                      default_value=dpg.get_value("water_left_value"), parent='main_plot')
     
     center = (dpg.get_value("water_left_value") + dpg.get_value("water_right_value")) / 2
 
@@ -44,8 +45,9 @@ def plot_window(ui : "UI") -> None:
                       show=False, default_value=center, parent='main_plot', no_inputs=True, no_cursor=True)
     
     dpg.add_drag_line(label=f"Water Right Limit", tag='water_drag_right', show=False,
-                    callback=set_water_range_callback, user_data=(ui, 'right'), 
-                    default_value=dpg.get_value("water_right_value"), parent='main_plot')
+                      color=(255, 255, 255, 255),
+                      callback=set_water_range_callback, user_data=(ui, 'right'), 
+                      default_value=dpg.get_value("water_right_value"), parent='main_plot')
     
 def simulation_settings(ui : "UI") -> None:
     dpg.add_text(default_value='Simulation Settings', tag='sim_settings_title')

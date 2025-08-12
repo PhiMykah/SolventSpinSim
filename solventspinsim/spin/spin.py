@@ -40,7 +40,7 @@ class Spin:
         Generates and returns a PeakList object based on the current coupling strength
     """
     def __init__(self, spin_names : list[str] = [], nuclei_frequencies : list[float] | list[int] = [], couplings : ArrayLike = np.empty((0,0)), 
-                 half_height_width : float | int = 0.5, field_strength : float = 500,
+                 half_height_width : float | int = 0.5, field_strength : float = 500, intensities : list[float | int] | None = None,
                  coupling_strength : CouplingStrength | str | int = CouplingStrength.WEAK) -> None:
         """
         Initializes a Spin object with specified nuclear frequencies, coupling matrix, linewidth, and coupling strength.
@@ -73,6 +73,7 @@ class Spin:
         self.couplings = couplings
         self.half_height_width = half_height_width
         self.coupling_strength = coupling_strength
+        self.intensities = intensities
 
     # ---------------------------------------------------------------------------- #
     #                              Getters and Setters                             #
@@ -169,11 +170,30 @@ class Spin:
         else:
             raise TypeError("Invalid type for coupling_strength")
 
+    # -------------------------------- intensities ------------------------------- #
+
+    @property
+    def intensities(self) -> list[float | int]:
+        return self._intensities
+    
+    @intensities.setter
+    def intensities(self, value : list[float | int] | None) -> None:
+        if value is None:
+            self._intensities : list[float | int] = [1.0] * self._nuclei_number
+        elif isinstance(value, list) and all(isinstance(v, (float, int)) for v in value):
+            self._intensities : list[float | int] = value
+        else:
+            try:
+                new_value = [float(v) for v in value]
+                self._intensities : list[float | int]  = new_value
+            except:
+                raise TypeError("Invalid type for intensities")
+            
     # ---------------------------------------------------------------------------- #
     #                                   Functions                                  #
     # ---------------------------------------------------------------------------- #
 
-    def peaklist(self) -> PeakList:
+    def peaklist(self, intensities : list[float | int] | None = None) -> PeakList:
         """
         Generates and returns a PeakList object based on the current coupling strength.
         Depending on whether the coupling strength is strong or not, this method calls the appropriate
@@ -189,13 +209,14 @@ class Spin:
         PeakList : list[tuple[float, float]]
             The generated peak list for the current spin system
         """
+        self.intensities = intensities
         match self._coupling_strength:
             case CouplingStrength.STRONG:
                 # return gen_peaklist_strong(self._nuclei_frequencies, self._couplings)
                 print("Strong coupling peak list generation is still in development. Defaulting to weak coupling.", file=stderr)
-                return gen_peaklist_weak(self._nuclei_frequencies, self._couplings)
+                return gen_peaklist_weak(self._nuclei_frequencies, self._couplings, self.intensities)
             case _:
-                return gen_peaklist_weak(self._nuclei_frequencies, self._couplings)
+                return gen_peaklist_weak(self._nuclei_frequencies, self._couplings, self.intensities)
     
 def loadSpinFromFile(file : str) -> tuple[list[str], list[float] | list[int], np.ndarray]:
     """

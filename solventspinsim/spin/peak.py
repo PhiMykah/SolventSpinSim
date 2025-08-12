@@ -5,7 +5,7 @@ from spin.types import *
 #                              Generate Couplings                              #
 # ---------------------------------------------------------------------------- #
 
-def gen_peaklist_weak(nuclei_frequencies : list[float] | list[int], J_couplings : np.ndarray) -> PeakList:
+def gen_peaklist_weak(nuclei_frequencies : list[float] | list[int], J_couplings : np.ndarray, intensities : list[float | int]) -> PeakList:
     """
     Generate a peak list for a weakly coupled spin system.
     This function simulates the NMR peak list for a set of nuclei with given resonance frequencies and J-coupling constants,
@@ -29,11 +29,17 @@ def gen_peaklist_weak(nuclei_frequencies : list[float] | list[int], J_couplings 
     -----
         Adapted from nmrsim's firstorder.py
     """
-    
+    n = len(nuclei_frequencies)
+
+    if len(intensities) < n:
+        intensities = intensities + [1] * (n-len(intensities))
+    if len(intensities) > n:
+        intensities = intensities[:n]
+
     peaklist : PeakList = []
     for i, nuclei in enumerate(nuclei_frequencies):
         couplings: Generator[tuple[ArrayLike, int]] = ((j, 1) for j in J_couplings[i] if j != 0)
-        signal : PeakList = _multiplet((nuclei, 1), couplings)
+        signal : PeakList = _multiplet((nuclei, intensities[i]), couplings)
         peaklist += signal
     return _reduce_peaks(sorted(peaklist))
 
