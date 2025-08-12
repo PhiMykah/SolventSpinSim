@@ -85,7 +85,8 @@ def set_water_range_callback(sender, app_data, user_data : "tuple[UI, Literal['l
     ui : "UI" = user_data[0]
     side : "Literal['left'] | Literal['right']" = user_data[1]
 
-    if sender == 'water_drag_left' or sender == 'water_drag_right':
+    item_alias = dpg.get_item_alias(sender)
+    if item_alias in ('water_drag_left', 'water_drag_right'):
         value = dpg.get_value(sender)
     else: 
         value = app_data
