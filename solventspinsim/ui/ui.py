@@ -25,7 +25,8 @@ class UI:
         self._points : int = 1000
         self.subplots_tag : str = ""
         self.plot_tags : dict = {}
-        self.water_range : tuple[float, ...] = ()
+        self.water_range : tuple[float, float] | tuple[float, ... ]= ()
+        self.use_settings : bool = False
         pass        
 
     # ---------------------------------------------------------------------------- #

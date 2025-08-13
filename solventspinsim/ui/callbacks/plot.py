@@ -72,9 +72,13 @@ def zoom_subplots_to_peaks(ui: "UI", padding: float = 10.0):
             max_x = nucleus_freq + padding
 
         # Optionally, set y-axis limits as well (here, just a default range)
-        min_y = -0.1
-        max_y = 1.1
-
+        if ui.spin.intensities[i] > 0:
+            min_y : float = -0.1
+            max_y : float = ui.spin.intensities[i] + 0.1
+        else: 
+            min_y : float = ui.spin.intensities[i] - 0.1
+            max_y : float = 0.1
+            
         # Set axis limits for subplot i
         dpg.set_axis_limits(f"peak_x_axis_{i}", min_x, max_x)
         dpg.set_axis_limits(f"peak_y_axis_{i}", min_y, max_y)

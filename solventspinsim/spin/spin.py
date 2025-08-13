@@ -209,7 +209,8 @@ class Spin:
         PeakList : list[tuple[float, float]]
             The generated peak list for the current spin system
         """
-        self.intensities = intensities
+        if intensities is not None:
+            self.intensities = intensities
         match self._coupling_strength:
             case CouplingStrength.STRONG:
                 # return gen_peaklist_strong(self._nuclei_frequencies, self._couplings)

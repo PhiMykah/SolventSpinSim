@@ -9,6 +9,10 @@ from ui.callbacks.plot import update_simulation_plot
 from ui.callbacks import zoom_subplots_to_peaks
 from spin.spin import Spin, loadSpinFromFile
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ui.ui import UI
+
 def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tuple,
                          matrix_size : int, init_params : np.ndarray, water_range : tuple[float, float]) -> np.ndarray:
     if not dpg.does_item_exist('opt_window'):
@@ -91,7 +95,7 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
     return optimized_params
 
 
-def optimize_simulation(nmr_file : str, spin_matrix_file : str, field_strength : int, water_range : tuple[float, float], init_hhw : float = 1.0) -> Spin:
+def optimize_simulation(nmr_file : str, spin : Spin, water_range : tuple[float, float]) -> Spin:
     df = nmrPype.DataFrame(nmr_file)
 
     if df.array is None:
@@ -113,32 +117,29 @@ def optimize_simulation(nmr_file : str, spin_matrix_file : str, field_strength :
     first : float = init_orig - delta*(init_size - 1)
 
     specValPPM = (first + (x_vals - 1.0)*delta)/init_obs
-    specValHz : list[float] = [ppm * field_strength for ppm in specValPPM]
+    specValHz : list[float] = [ppm * spin._field_strength for ppm in specValPPM]
 
     freq_limits : list[float] = [specValHz[0], specValHz[-1]]
     freq_limits.sort()
 
     nmr_array = np.vstack((specValHz, df.array))
-   
-    spin_names, nuclei_frequencies, couplings = loadSpinFromFile(spin_matrix_file)
-    spin = Spin(spin_names, nuclei_frequencies, couplings, half_height_width=init_hhw, field_strength=field_strength)
 
-    initial_values : list[float] = [init_sw, init_obs, init_hhw]
+    initial_values : list[float] = [init_sw, init_obs, spin._half_height_width]
     initial_intensities = [1.0] * spin._nuclei_number
-    init_params : np.ndarray = np.concatenate((couplings.flatten(), initial_intensities, initial_values))
-    matrix_shape = couplings.shape
-    matrix_size : int = couplings.size 
+    init_params : np.ndarray = np.concatenate((spin._couplings.flatten(), initial_intensities, initial_values))
+    matrix_shape = spin._couplings.shape
+    matrix_size : int = spin._couplings.size 
 
     optimized_params = section_optimization(nmr_array, spin, matrix_shape, matrix_size, init_params, water_range)
     
-    new_couplings, intensities, new_spec_width, new_obs, new_hhw = unpack_params(optimized_params, matrix_size, matrix_shape)
+    new_couplings, new_intensities, new_spec_width, new_obs, new_hhw = unpack_params(optimized_params, matrix_size, matrix_shape)
     
-    optimized_spin = Spin(spin_names, nuclei_frequencies, new_couplings, new_hhw, field_strength, list(intensities))
+    optimized_spin = Spin(spin.spin_names, spin._ppm_nuclei_frequencies, new_couplings, new_hhw, spin._field_strength, list(new_intensities))
     print('Optimization Complete!', file=stderr)
     return optimized_spin
 
 
-def optimize_callback(sender, app_data, user_data):
+def optimize_callback(sender, app_data, user_data : "UI"):
     if not hasattr(user_data, "spin_file") or not user_data.spin_file:
         print("Failed to Optimize! Missing Requirement: spin_file", file=stderr)
         return
@@ -151,8 +152,15 @@ def optimize_callback(sender, app_data, user_data):
     
     nmr_file : str = user_data.nmr_file
     spin_matrix_file : str = user_data.spin_file
-    field_strength : int = user_data.field_strength
-    water_range : tuple[float, float] = user_data.water_range
+    field_strength : float = user_data.field_strength
+    if len(user_data.water_range) == 2:
+        water_range : tuple[float, float] = user_data.water_range
+    elif len(user_data.water_range) > 2:
+        water_range : tuple[float, float] = (user_data.water_range[0], user_data.water_range[1])
+    else:
+        raise ValueError("Water range is invalid. Water range must be two values!")
+    
+    init_hhw : float | int = user_data.spin.half_height_width
 
     if dpg.does_item_exist('water_drag_left'):
         dpg.hide_item('water_drag_left')
@@ -161,7 +169,13 @@ def optimize_callback(sender, app_data, user_data):
     if dpg.does_item_exist('water_drag_right'):
         dpg.hide_item('water_drag_right')
 
-    optimized_spin = optimize_simulation(nmr_file, spin_matrix_file, field_strength, water_range)
+    if user_data.use_settings:
+        initial_spin = user_data.spin
+    else:
+        spin_names, nuclei_frequencies, couplings = loadSpinFromFile(spin_matrix_file)
+        initial_spin = Spin(spin_names, nuclei_frequencies, couplings, half_height_width=init_hhw, field_strength=field_strength)
+
+    optimized_spin = optimize_simulation(nmr_file, initial_spin, water_range)
 
     zoom_subplots_to_peaks(user_data)
     setattr(user_data, "spin", optimized_spin)

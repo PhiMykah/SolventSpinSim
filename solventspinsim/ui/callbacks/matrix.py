@@ -103,4 +103,3 @@ def modify_matrix(sender, app_data, user_data : "tuple[UI, int, int, float]") ->
                            spin._nuclei_number)
     update_plotting_ui(user_data[0])
     zoom_subplots_to_peaks(user_data[0])
-    fit_axes(user_data[0].plot_tags["main"])

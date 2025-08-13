@@ -81,6 +81,26 @@ def set_field_strength_callback(sender, app_data, user_data : "UI") -> None:
     zoom_subplots_to_peaks(user_data)
     fit_axes(user_data.plot_tags["main"])
 
+def set_intensity_callback(sender, app_data, user_data : "UI") -> None:
+    if user_data.spin._nuclei_number == 0:
+        return 
+    user_data.spin.intensities = [app_data] * user_data.spin._nuclei_number
+
+    update_simulation_plot(user_data.spin, user_data.points, user_data.spin.half_height_width,
+                           user_data.spin._nuclei_number)
+    update_plotting_ui(user_data)
+    zoom_subplots_to_peaks(user_data)
+
+def set_hhw_callback(sender, app_data, user_data : "UI") -> None:
+    if user_data.spin._nuclei_number == 0:
+        return
+    user_data.spin.half_height_width = app_data
+
+    update_simulation_plot(user_data.spin, user_data.points, user_data.spin.half_height_width,
+                           user_data.spin._nuclei_number)
+    update_plotting_ui(user_data)
+    zoom_subplots_to_peaks(user_data)
+
 def set_water_range_callback(sender, app_data, user_data : "tuple[UI, Literal['left'] | Literal['right']]"):
     ui : "UI" = user_data[0]
     side : "Literal['left'] | Literal['right']" = user_data[1]

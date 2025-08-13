@@ -1,11 +1,12 @@
+from operator import call
 from pathlib import Path
 import os
 import dearpygui.dearpygui as dpg
 
 from ui.components import Button
 from ui.callbacks import (load_table, help_msg, set_field_strength_callback, 
-                          set_points_callback, set_water_range_callback, 
-                          setter_callback, test_callback)
+                          set_points_callback, set_hhw_callback, set_intensity_callback,
+                          set_water_range_callback, test_callback)
 from optimize.optimize import optimize_callback
 
 from typing import TYPE_CHECKING
@@ -64,6 +65,20 @@ def simulation_settings(ui : "UI") -> None:
             dpg.add_input_int(label='Points', default_value=1000, step=1, step_fast=100, 
                               tag='points', callback=set_points_callback, user_data=ui)
             help_msg("Number of points in entire spectrum to simulate.")
+        with dpg.table_row():
+            dpg.add_input_float(label='Intensity', default_value=1.0, format="%.02f", step=1,
+                                step_fast=10, tag='intensity', callback=set_intensity_callback,
+                                user_data=ui)
+            help_msg("Maximum starting intensity for each peak.")
+            dpg.add_drag_float(label='Half-Height Width', default_value=1.0, format="%.02f", speed=0.1,
+                               tag='hhw', callback=set_hhw_callback,
+                               user_data=ui)
+            help_msg("Width of the peak lorentzian at half-height.")
+        with dpg.table_row():
+            dpg.add_checkbox(label="Optimize with Current Settings", tag='use_settings', 
+                             callback=lambda sender, value, ui : setattr(ui, "use_settings", value),
+                             user_data=ui)
+            help_msg("Utilize current simulation settings as initial parameters for optimization")
 
 def optimization_settings(ui : "UI") -> None:
     dpg.add_text(default_value='Optimization Settings', tag='opt_settings_title')
