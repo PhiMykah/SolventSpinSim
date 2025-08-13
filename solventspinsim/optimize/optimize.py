@@ -64,9 +64,9 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
 
         def quadrant_objective(params):
             couplings, intensities, spec_width, obs, hhw = unpack_params(params, matrix_size, matrix_shape)
-            new_spin = Spin(spin_names, list(spin._nuclei_frequencies), couplings, hhw, spin.field_strength)
+            new_spin = Spin(spin_names, list(spin._ppm_nuclei_frequencies), couplings, hhw, spin.field_strength)
             simulation = simulate_peaklist(new_spin.peaklist(list(intensities)), len(real_x), hhw, (real_x[0],real_x[-1]))
-            sim_y = simulation[1][::-1]
+            sim_y = list(np.ascontiguousarray(simulation[1][::-1]))
             if not dpg.does_item_exist('sim_opt_series'):
                 dpg.add_line_series(real_x, sim_y, label='Simulation Slice', parent='opt_y_axis', tag='sim_opt_series')
             else:
