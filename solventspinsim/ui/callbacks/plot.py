@@ -272,7 +272,7 @@ def set_nmr_plot_values(nmr_array : "np.ndarray") -> None:
     else:
         dpg.add_line_series(nmr_array[0], nmr_array[1], label='Real Data', parent="main_y_axis", tag="nmr_plot")
 
-def update_simulation_plot(spin : "Spin", points : int, hhw : int | float, peak_count : int) -> None:
+def update_simulation_plot(spin : "Spin", points : int, hhw : list[float | int] | float | int, peak_count : int) -> None:
     """
     Simulates the spectrum and updates the plot for the given UI object.    
     """

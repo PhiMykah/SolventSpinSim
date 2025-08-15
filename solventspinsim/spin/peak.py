@@ -1,5 +1,6 @@
 import numpy as np
 from spin.types import *
+from collections import Counter
 
 # ---------------------------------------------------------------------------- #
 #                              Generate Couplings                              #
@@ -22,7 +23,7 @@ def gen_peaklist_weak(nuclei_frequencies : list[float] | list[int], J_couplings 
             and each element in the row is the coupling to another nucleus
     Returns
     -------
-        PeakList: list[tuple[float,float]]
+        PeakList: list[tuple[float,float,int]]
             A list of peaks representing the simulated NMR spectrum for the given spin system
 
     Notes
@@ -39,13 +40,13 @@ def gen_peaklist_weak(nuclei_frequencies : list[float] | list[int], J_couplings 
     peaklist : PeakList = []
     for i, nuclei in enumerate(nuclei_frequencies):
         couplings: Generator[tuple[ArrayLike, int]] = ((j, 1) for j in J_couplings[i] if j != 0)
-        signal : PeakList = _multiplet((nuclei, intensities[i]), couplings)
+        signal : PeakList = _multiplet((nuclei, intensities[i], i), couplings)
         peaklist += signal
     return _reduce_peaks(sorted(peaklist))
 
 def gen_peaklist_strong(nuclei_frequencies : list[float] | list[int], J_couplings : np.ndarray) -> PeakList:
     # Adapted from nmrsim's qm.py
-    return [(0,0)]
+    return [(0,0,0)]
 
 # ---------------------------------------------------------------------------- #
 #                               Helper Functions                               #
@@ -65,7 +66,7 @@ def _multiplet(signal : tuple, couplings : Generator[tuple[ArrayLike, int]]) -> 
 
     Returns
     -------
-    PeakList: list[tuple[float,float]]
+    PeakList: list[tuple[float,float,int]]
         A sorted list of peaks after applying all couplings
 
     Notes
@@ -86,15 +87,15 @@ def _doublet(peaklist, coupling_constant) -> PeakList:
 
     Parameters
     ----------
-    peaklist : list[tuple[float,float]]
-        List of (frequency, intensity) tuples representing the original peaks
+    peaklist : list[tuple[float,float,int]]
+        List of (frequency, intensity, nuclei_idx) tuples representing the original peaks
     coupling_constant : float
         The coupling constant (Hz) used to split each peak
 
     Returns
     -------
-    PeakList :  list[tuple[float,float]]
-        A new list of (frequency, intensity) tuples representing the doublet peaks
+    PeakList :  list[tuple[float,float,int]]
+        A new list of (frequency, intensity, nuclei_idx) tuples representing the doublet peaks
 
     Notes
     -----
@@ -102,9 +103,9 @@ def _doublet(peaklist, coupling_constant) -> PeakList:
     """
     new_peaklist : PeakList = []
     # For every peak in the list, split the frequency and half the intensity to form doublets 
-    for freq, intensity in peaklist:
-        new_peaklist.append((freq - coupling_constant / 2, intensity / 2))
-        new_peaklist.append((freq + coupling_constant / 2, intensity / 2))
+    for freq, intensity, idx in peaklist:
+        new_peaklist.append((freq - coupling_constant / 2, intensity / 2, idx))
+        new_peaklist.append((freq + coupling_constant / 2, intensity / 2, idx))
     return new_peaklist
 
 def _reduce_peaks(unsorted_peaklist, tolerance=0) -> PeakList:
@@ -116,7 +117,7 @@ def _reduce_peaks(unsorted_peaklist, tolerance=0) -> PeakList:
 
     Parameters
     ----------
-        unsorted_peaklist : list[tuple[float,float]]
+        unsorted_peaklist : list[tuple[float,float,int]]
             The list of peaks to be reduced
         tolerance : float, optional
             The maximum allowed difference between peak positions 
@@ -125,7 +126,7 @@ def _reduce_peaks(unsorted_peaklist, tolerance=0) -> PeakList:
 
     Returns
     -------
-        PeakList : list[tuple[float,float]]
+        PeakList : list[tuple[float,float,int]]
             A new list of peaks where adjacent peaks within the specified tolerance
             have been combined
 
@@ -146,14 +147,17 @@ def _reduce_peaks(unsorted_peaklist, tolerance=0) -> PeakList:
             work.append(peak)
             continue
         else:
-            new_peaklist.append(peak_sum(work))
+            parent_idx = _mode_smallest(work)
+            new_peaklist.append(peak_sum(work, parent_idx))
+
             work = [peak]
     if work: # Add the remaining work peaks after loop
-        new_peaklist.append(peak_sum(work))
+        parent_idx = _mode_smallest(work)
+        new_peaklist.append(peak_sum(work, parent_idx))
 
     return new_peaklist
 
-def peak_sum(peaklist : PeakList) -> Peak:
+def peak_sum(peaklist : PeakList, parent_idx : int) -> Peak:
     """
     Sums up a peak list by adding intensity and finding the average frequency
 
@@ -173,5 +177,15 @@ def peak_sum(peaklist : PeakList) -> Peak:
     """
     frequency_total : float | Literal[0] = sum(peak[0] for peak in peaklist)
     intensity_total : float | Literal[0] = sum(peak[1] for peak in peaklist)
+    
+    return (frequency_total / len(peaklist), intensity_total, parent_idx)
 
-    return (frequency_total / len(peaklist), intensity_total)
+def _mode_smallest(peak_group: PeakList) -> int:
+    """
+    Returns the mode of parent_idx values in peak_group,
+    breaking ties by choosing the smallest index.
+    """
+    counts = Counter(p[2] for p in peak_group)
+    max_count = max(counts.values())
+    candidates = [idx for idx, cnt in counts.items() if cnt == max_count]
+    return min(candidates)

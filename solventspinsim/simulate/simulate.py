@@ -1,14 +1,14 @@
 import numpy as np
 from simulate.types import *
 
-def simulate_peaklist(peaklist : PeakList, points : int = 800, half_height_width : float | int = 1,
+def simulate_peaklist(peaklist : PeakList, points : int = 800, half_height_width : list[float | int] | float | int = 1,
                       freq_limits : tuple[float,float] | None = None) -> PeakArray:
     """
     Simulate the NMR spectrum represented by the peaklist
 
     Parameters
     ----------
-    peaklist : list[tuple[float,float]]
+    peaklist : list[tuple[float,float, int]]
         A list of peaks representing the simulated NMR spectrum for the given spin system
     points : int, optional
         Number of points in the entire spectrum, by default 800
@@ -43,7 +43,7 @@ def simulate_peaklist(peaklist : PeakList, points : int = 800, half_height_width
 
     return np.vstack((x, y))
 
-def simulate_lorentzians(x : PeakArray, peaklist : PeakList, half_height_width : float | int) -> np.ndarray:
+def simulate_lorentzians(x : PeakArray, peaklist : PeakList, half_height_width : list[float | int] | float | int) -> np.ndarray:
     """Simulates the y axis of a peak aray using the x axis, peak frequency and intensities, and half_height_width value.
 
     Parameters
@@ -65,8 +65,13 @@ def simulate_lorentzians(x : PeakArray, peaklist : PeakList, half_height_width :
         Adapted from nmrsim's math.py
     """
     y: PeakArray = np.zeros_like(x)
-    for center, intensity in peaklist:
-        y += lorentz(x, center, intensity, half_height_width)
+
+    for center, intensity, idx in peaklist:
+        if isinstance(half_height_width, (float, int)):
+            hhw = half_height_width
+        else:
+            hhw = half_height_width[idx]
+        y += lorentz(x, center, intensity, hhw)
     return y
 
 def lorentz(freq : PeakArray, center : float, intensity : float, hhw : float) -> PeakArray:

@@ -22,8 +22,8 @@ class Spin:
         List of resonance frequencies (in Hz) for each nucleus in the spin system
     couplings : ArrayLike (ndarray)
         2D matrix (n x n) of scalar coupling constants or J-couplings between nuclei
-    half_height_width : float | int
-        Peak width at half height (in Hz) for spectral lines
+    half_height_width : list[float | int] | float | int
+        Peak width at half height (in Hz) for spectral lines for each peak group
     coupling_strength : CouplingStrength
         Enum indicating the coupling type for simulation (e.g., weak coupling or strong coupling)
 
@@ -39,8 +39,9 @@ class Spin:
     peaklist() -> list[tuple[float,float]]
         Generates and returns a PeakList object based on the current coupling strength
     """
-    def __init__(self, spin_names : list[str] = [], nuclei_frequencies : list[float] | list[int] = [], couplings : ArrayLike = np.empty((0,0)), 
-                 half_height_width : float | int = 0.5, field_strength : float = 500, intensities : list[float | int] | None = None,
+    def __init__(self, spin_names : list[str] = [], nuclei_frequencies : list[float] | list[int] = [], 
+                 couplings : ArrayLike = np.empty((0,0)), half_height_width : list[float | int] | float | int = 0.5, 
+                 field_strength : float = 500, intensities : list[float | int] | None = None,
                  coupling_strength : CouplingStrength | str | int = CouplingStrength.WEAK) -> None:
         """
         Initializes a Spin object with specified nuclear frequencies, coupling matrix, linewidth, and coupling strength.
@@ -74,6 +75,7 @@ class Spin:
         self.half_height_width = half_height_width
         self.coupling_strength = coupling_strength
         self.intensities = intensities
+        self.nuclei_peak_indices = []
 
     # ---------------------------------------------------------------------------- #
     #                              Getters and Setters                             #
@@ -134,14 +136,19 @@ class Spin:
     # ----------------------------- half_height_width ---------------------------- #
 
     @property
-    def half_height_width(self) -> float | int:
+    def half_height_width(self) -> list[float | int]:
         return self._half_height_width
 
     @half_height_width.setter
-    def half_height_width(self, value: float | int) -> None:
-        if not isinstance(value, (float, int)):
-            raise TypeError("half_height_width must be a float or int")
-        self._half_height_width: float | int = value
+    def half_height_width(self, value: list[float | int] | float | int) -> None:
+        if isinstance(value, (float, int)):  
+            self._half_height_width : list[float | int] = [value] * self._nuclei_number
+        elif isinstance(value, list) and all(isinstance(x, (float, int)) for x in value):
+            if len(value) != self._nuclei_number:
+                raise ValueError(f"half_height_width list must have length {self._nuclei_number}")
+            self._half_height_width : list[float | int] = value
+        else:
+            raise TypeError("half_height_width must be a float, int, or list of floats/ints")
 
     # ----------------------------- coupling_strength ---------------------------- #
 
@@ -206,7 +213,7 @@ class Spin:
 
         Returns
         -------
-        PeakList : list[tuple[float, float]]
+        PeakList : list[tuple[float, float, int]]
             The generated peak list for the current spin system
         """
         if intensities is not None:

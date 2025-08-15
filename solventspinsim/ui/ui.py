@@ -62,7 +62,7 @@ class UI:
             dpg.add_file_extension("", color=(150, 255, 150, 255))
             dpg.add_file_extension("FT1 Files (*.ft1){.ft1,}", color=(0, 255, 255, 255))
 
-        with dpg.window(label='Primary Window') as main_window:
+        with dpg.window(label='Primary Window', width=1080, height=720) as main_window:
             self.window = main_window
             with dpg.menu_bar():
                 with dpg.menu(label="File"):
@@ -75,7 +75,7 @@ class UI:
                     dpg.add_button(label="Press Me", callback=test_callback)
                     dpg.add_color_picker(label="Color Me", callback=test_callback)
                 
-                with dpg.menu(label='View'):
+                with dpg.menu(label='View', tag='view_menu'):
                     dpg.add_menu_item(label='Show Spin Matrix Table', callback=show_item_callback, user_data='matrix_window')
 
             self.sim_settings = SimulationSettings(self, main_window, False)

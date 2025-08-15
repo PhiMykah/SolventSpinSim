@@ -6,7 +6,7 @@ from scipy.optimize import minimize
 
 from simulate.simulate import simulate_peaklist
 from ui.callbacks.plot import update_simulation_plot, update_plotting_ui
-from ui.callbacks import zoom_subplots_to_peaks
+from ui.callbacks import zoom_subplots_to_peaks, show_item_callback
 from spin.spin import Spin, loadSpinFromFile
 
 from typing import TYPE_CHECKING
@@ -21,10 +21,51 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
                 dpg.add_plot_legend()
                 dpg.add_plot_axis(dpg.mvXAxis, label="x", tag="opt_x_axis")
                 dpg.add_plot_axis(dpg.mvYAxis, label="y", tag="opt_y_axis")
+        with dpg.window(label='Optimization Parameters', tag='opt_params_window', width=400, height=600) as opt_window:
+            dpg.add_text('Couplings:', tag='opt_coupling_title')
+            with dpg.table(tag='opt_coupling_table', header_row=True, row_background=False,
+              borders_innerH=True, borders_outerH=True, borders_innerV=True,
+              borders_outerV=True, delay_search=True, parent=opt_window):
+                for atom in spin.spin_names:
+                    dpg.add_table_column(label=str(atom))
+                for i in range(spin._couplings.shape[0]):
+                    with dpg.table_row():
+                        dpg.add_text(spin.spin_names[i], tag=f'coupling_row_{i}_header')
+                        for j in range(spin._couplings.shape[-1]):
+                            dpg.add_text(f"", tag=f'opt_coupling_{i}_{j}')
+
+            dpg.add_text('Intensities:', tag='opt_intensity_title')
+            with dpg.table(tag='opt_intensity_table', row_background=False,
+              borders_innerH=True, borders_outerH=True, borders_innerV=True,
+              borders_outerV=True, delay_search=True, parent=opt_window):
+                for i in range(spin._couplings.shape[0]):
+                    dpg.add_table_column()
+
+                with dpg.table_row():
+                    for i in range(spin._couplings.shape[1]):
+                        dpg.add_text(f"", tag=f'opt_intensities_{i}')
+
+            dpg.add_text(default_value=f'Spectral Width', tag='opt_sw')
+
+            dpg.add_text(default_value=f'Observation Frequency', tag='opt_obs')
+
+            dpg.add_text('Half-Height Width:', tag='opt_hhw_title')
+            with dpg.table(tag='opt_hhw_table', row_background=False,
+              borders_innerH=True, borders_outerH=True, borders_innerV=True,
+              borders_outerV=True, delay_search=True, parent=opt_window):
+                for i in range(spin._couplings.shape[0]):
+                    dpg.add_table_column()
+
+                with dpg.table_row():
+                    for i in range(spin._couplings.shape[1]):
+                        dpg.add_text(f"", tag=f'opt_hhw_{i}')
         with dpg.value_registry():
             dpg.add_bool_value(default_value=False, tag='opt_series_added')
     else:
         dpg.show_item('opt_window')
+
+    dpg.add_menu_item(label='Show Optimization Graph', callback=show_item_callback, user_data='opt_window', parent='view_menu')
+    dpg.add_menu_item(label='Show Optimization Parameters', callback=show_item_callback, user_data='opt_params_window', parent='view_menu')
 
     optimized_params_list: list = []
     spin_names = spin.spin_names
@@ -47,7 +88,7 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
     
     param_bounds : list[tuple[float, float]] = [(-100, 100)] * len(spin._couplings.flatten()) + \
                                                [(-1000, 1000)] * spin._nuclei_number + \
-                                               [(1e-6, 1e6)] + [(1e-6, 1e6)] + [(0, 100)]
+                                               [(1e-6, 1e6)] + [(1e-6, 1e6)] + [(0.5, 100)] * spin._nuclei_number
     
     for quadrant in quadrants:
         start : int = quadrant[0]
@@ -72,9 +113,21 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
 
         def quadrant_objective(params):
             couplings, intensities, spec_width, obs, hhw = unpack_params(params, matrix_size, matrix_shape)
-            new_spin = Spin(spin_names, list(spin._ppm_nuclei_frequencies), couplings, hhw, spin.field_strength)
-            simulation = simulate_peaklist(new_spin.peaklist(list(intensities)), len(real_x), hhw, (real_x[0],real_x[-1]))
+            new_spin = Spin(spin_names, list(spin._ppm_nuclei_frequencies), couplings, list(hhw), spin.field_strength)
+            simulation = simulate_peaklist(new_spin.peaklist(list(intensities)), len(real_x),
+                                           list(hhw), (real_x[0],real_x[-1]))
             sim_y = list(np.ascontiguousarray(simulation[1][::-1]))
+
+            for i in range(matrix_shape[0]):
+                for j in range(matrix_shape[1]):
+                    dpg.set_value(f'opt_coupling_{i}_{j}', f"{couplings[i][j]}")
+            for i in range(matrix_shape[0]):
+                dpg.set_value(f'opt_intensities_{i}', f"{intensities[i]}")
+            dpg.set_value('opt_sw', f"Spectral Width: {spec_width:.03f}")
+            dpg.set_value('opt_obs', f"Observation Frequency: {spec_width:.03f}")
+            for i in range(matrix_shape[0]):
+                dpg.set_value(f'opt_hhw_{i}', f"{hhw[i]}")
+
             if not dpg.does_item_exist('sim_opt_series'):
                 dpg.add_line_series(real_x, sim_y, label='Simulation Slice', parent='opt_y_axis', tag='sim_opt_series')
             else:
@@ -120,6 +173,7 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
     # Combine couplings and intensities from each quadrant using nuclei_quadrant_indices
     new_couplings = np.zeros_like(spin._couplings)
     new_intensities = np.zeros(spin._nuclei_number)
+    new_hhw = np.zeros(spin._nuclei_number)
 
     for q_idx, indices in enumerate(nuclei_quadrant_indices):
         for i in indices:
@@ -127,17 +181,19 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
             new_couplings[i, :] = couplings_list[q_idx][i, :]
             # For intensities, copy the value for each nucleus in this quadrant
             new_intensities[i] = intensities_list[q_idx][i]
+            # For half_height_widths, copy the value for each nucleus in this quadrant
+            new_hhw[i] = hhw_list[q_idx][i]
 
-    new_hhw = np.mean(hhw_list)
     _, _, new_sw, new_obs, _ = unpack_params(optimized_params_list[0], matrix_size, matrix_shape)
 
     # Use the last optimized parameters for other values
-    optimized_params = np.concatenate((new_couplings.flatten(), new_intensities, [new_sw, new_obs, new_hhw]))
+    optimized_params = np.concatenate((new_couplings.flatten(), new_intensities, [new_sw, new_obs], new_hhw))
 
     if dpg.does_item_exist('region_line_left'):
         dpg.delete_item('region_line_left')
     if dpg.does_item_exist('region_line_right'):
         dpg.delete_item('region_line_right')
+
     return optimized_params
 
 
@@ -170,9 +226,9 @@ def optimize_simulation(nmr_file : str, spin : Spin, water_range : tuple[float, 
 
     nmr_array = np.vstack((specValHz, df.array))
 
-    initial_values : list[float] = [init_sw, init_obs, spin._half_height_width]
+    initial_values : list[float] = [init_sw, init_obs]
     initial_intensities = [1.0] * spin._nuclei_number
-    init_params : np.ndarray = np.concatenate((spin._couplings.flatten(), initial_intensities, initial_values))
+    init_params : np.ndarray = np.concatenate((spin._couplings.flatten(), initial_intensities, initial_values, spin._half_height_width))
     matrix_shape = spin._couplings.shape
     matrix_size : int = spin._couplings.size 
 
@@ -180,7 +236,7 @@ def optimize_simulation(nmr_file : str, spin : Spin, water_range : tuple[float, 
     
     new_couplings, new_intensities, new_spec_width, new_obs, new_hhw = unpack_params(optimized_params, matrix_size, matrix_shape)
     
-    optimized_spin = Spin(spin.spin_names, spin._ppm_nuclei_frequencies, new_couplings, new_hhw, spin._field_strength, list(new_intensities))
+    optimized_spin = Spin(spin.spin_names, spin._ppm_nuclei_frequencies, new_couplings, list(new_hhw), spin._field_strength, list(new_intensities))
     print('Optimization Complete!', file=stderr)
     return optimized_spin
 
@@ -203,7 +259,7 @@ def optimize_callback(sender, app_data, user_data : "UI"):
     else:
         raise ValueError("Water range is invalid. Water range must be two values!")
     
-    init_hhw : float | int = user_data.spin.half_height_width
+    init_hhw : list[float | int] = user_data.spin.half_height_width
 
     if dpg.does_item_exist('water_drag_left'):
         dpg.hide_item('water_drag_left')
@@ -229,6 +285,7 @@ def optimize_callback(sender, app_data, user_data : "UI"):
 def unpack_params(params : np.ndarray | list, matrix_size : int, matrix_shape : tuple):
     cMatrix_flat = np.array(params[:matrix_size])
     intensities = np.array(params[matrix_size:matrix_size+matrix_shape[0]])
-    sw, obs, w = params[matrix_size+matrix_shape[0]:]
+    sw, obs = params[matrix_size+matrix_shape[0]:matrix_size+matrix_shape[0]+2]
+    w = params[matrix_size+matrix_shape[0]+2:]
 
     return cMatrix_flat.reshape(matrix_shape), intensities, sw, obs, w
