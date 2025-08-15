@@ -33,6 +33,9 @@ def set_spin_file(sender, app_data : dict, user_data : "UI") -> None:
     spin = Spin(spin_names, nuclei_frequencies, couplings)
     ui.spin = spin
 
+    if ui.sim_settings is not None:
+        ui.sim_settings.enable()
+
     add_subplots(ui)
     zoom_subplots_to_peaks(ui)
     update_plot_callback(sender, app_data, ui)
@@ -47,10 +50,10 @@ def set_nmr_file_callback(sender, app_data, user_data : "UI") -> None:
 
     field_strength : float = getattr(user_data, 'field_strength', 500.0)
     nmr_array = load_nmr_array(file, field_strength)
-    user_data.points = len(nmr_array[0])
+    user_data.sim_settings.points = len(nmr_array[0])
 
     if dpg.get_value('main_plot_added'):
-        update_simulation_plot(user_data.spin, user_data.points, user_data.spin.half_height_width, 
+        update_simulation_plot(user_data.spin, user_data.sim_settings.points, user_data.spin.half_height_width, 
                            user_data.spin._nuclei_number)
     set_nmr_plot_values(nmr_array)
 

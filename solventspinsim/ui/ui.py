@@ -1,6 +1,6 @@
 import dearpygui.dearpygui as dpg
 from ui.themes import Theme
-from ui.graphics import plot_window, simulation_settings, optimization_settings
+from ui.graphics import PlotWindow, OptimizationSettings, SimulationSettings
 from ui.callbacks import set_spin_file, set_nmr_file_callback, test_callback, fit_axes, show_item_callback
 from ui.components import Button
 from spin.spin import Spin
@@ -17,17 +17,16 @@ class UI:
         self.spin_file : str = ""
         self.nmr_file : str = ""
         self.mat_table : str | None = None
-        self.field_strength : float = 500.0
         self.spin = Spin()
         self.window = None
         self.disabled_theme = None
         self.buttons: dict[str, Button] = {}
-        self._points : int = 1000
         self.subplots_tag : str = ""
         self.plot_tags : dict = {}
         self.water_range : tuple[float, float] | tuple[float, ... ]= ()
-        self.use_settings : bool = False
-        pass        
+        self.sim_settings : SimulationSettings = SimulationSettings()
+        self.opt_settings : OptimizationSettings = OptimizationSettings()
+        self.plot_window : PlotWindow = PlotWindow()       
 
     # ---------------------------------------------------------------------------- #
     #                              Getters and Setters                             #
@@ -35,13 +34,12 @@ class UI:
 
     @property
     def points(self) -> int:
-        return self._points
+        return self.sim_settings.points
     
     @points.setter
     def points(self, value) -> None:
-        self._points = value
-        dpg.set_value("points", value)
-    
+        self.sim_settings.points = value
+
     # ---------------------------------------------------------------------------- #
     #                              Main Render Window                              #
     # ---------------------------------------------------------------------------- #
@@ -52,7 +50,8 @@ class UI:
 
         Assumes dearpygui's context has been created
         """
-            
+        
+
         with dpg.file_dialog(directory_selector=False, show=False, callback=set_spin_file, width=800, height=400, 
                              user_data=self) as load_file_dialog:
             dpg.add_file_extension("", color=(150, 255, 150, 255))
@@ -79,13 +78,13 @@ class UI:
                 with dpg.menu(label='View'):
                     dpg.add_menu_item(label='Show Spin Matrix Table', callback=show_item_callback, user_data='matrix_window')
 
-            simulation_settings(self)
+            self.sim_settings = SimulationSettings(self, main_window, False)
 
             dpg.add_separator()
 
-            optimization_settings(self)
+            self.opt_settings = OptimizationSettings(self, main_window, True)
 
-            plot_window(self)            
+            self.plot_window = PlotWindow(self, main_window, True)        
 
             self.buttons['fit_axes'] = Button(label='Fit Axes', 
                                               callback= lambda : fit_axes({"x_axis": "main_x_axis", "y_axis": "main_y_axis"}), 

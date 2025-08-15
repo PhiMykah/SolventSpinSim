@@ -100,7 +100,7 @@ def update_plot_callback(sender, app_data, user_data: "UI") -> None:
         if fit_axes_button is not None and not fit_axes_button.is_enabled:
             fit_axes_button.enable()
 
-    update_simulation_plot(ui.spin, ui.points, ui.spin.half_height_width, ui.spin._nuclei_number)
+    update_simulation_plot(ui.spin, ui.sim_settings.points, ui.spin.half_height_width, ui.spin._nuclei_number)
     fit_axes(ui.plot_tags["main"])
     create_drag_lines(ui)
     if ui is not None:
@@ -191,7 +191,7 @@ def update_drag_item(sender, app_data, user_data : tuple["UI", "str", "tuple"]):
                         dpg.set_value(drag_tag, (new_value + sign * coupling_value, COUPLING_DRAG_HEIGHT))
 
         # Simulate and zoom
-        update_simulation_plot(ui.spin, ui.points, ui.spin.half_height_width, ui.spin._nuclei_number)
+        update_simulation_plot(ui.spin, ui.sim_settings.points, ui.spin.half_height_width, ui.spin._nuclei_number)
         zoom_subplots_to_peaks(ui)
 
     elif tag.startswith("coupling_drag_"):
@@ -230,7 +230,7 @@ def update_drag_item(sender, app_data, user_data : tuple["UI", "str", "tuple"]):
             if dpg.does_item_exist(nuclei_tag):
                 dpg.set_value(nuclei_tag, nuclei_value)
         # Simulate and zoom
-        update_simulation_plot(ui.spin, ui.points, ui.spin.half_height_width, ui.spin._nuclei_number)
+        update_simulation_plot(ui.spin, ui.sim_settings.points, ui.spin.half_height_width, ui.spin._nuclei_number)
         zoom_subplots_to_peaks(ui)
     
 def fit_axes(plot_dict : dict) -> None:

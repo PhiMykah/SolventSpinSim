@@ -5,7 +5,7 @@ import dearpygui.dearpygui as dpg
 from scipy.optimize import minimize
 
 from simulate.simulate import simulate_peaklist
-from ui.callbacks.plot import update_simulation_plot
+from ui.callbacks.plot import update_simulation_plot, update_plotting_ui
 from ui.callbacks import zoom_subplots_to_peaks
 from spin.spin import Spin, loadSpinFromFile
 
@@ -45,6 +45,10 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
                                                    (indices[1], indices[0]),
                                                    (indices[0], len(nmr_array[0])))
     
+    param_bounds : list[tuple[float, float]] = [(-100, 100)] * len(spin._couplings.flatten()) + \
+                                               [(-1000, 1000)] * spin._nuclei_number + \
+                                               [(1e-6, 1e6)] + [(1e-6, 1e6)] + [(0, 100)]
+    
     for quadrant in quadrants:
         start : int = quadrant[0]
         end : int = quadrant[1]
@@ -83,11 +87,53 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
 
             return np.sqrt(np.mean((sim_y - real_y) ** 2))
         
-        result = minimize(quadrant_objective, init_params, method='L-BFGS-B')
+        result = minimize(quadrant_objective, init_params, method='L-BFGS-B', bounds=param_bounds)
         optimized_params_list.append(result.x)
         init_params = result.x
 
-    optimized_params = np.mean(optimized_params_list, axis=0)
+    nuclei_quadrant_indices = []
+    for quadrant in quadrants:
+        start, end = quadrant
+        quadrant_range = (nmr_array[0][start], nmr_array[0][end-1])
+        indices_in_quadrant = [
+            idx for idx, freq in enumerate(spin._nuclei_frequencies)
+            if min(quadrant_range) <= freq <= max(quadrant_range)
+        ]
+        nuclei_quadrant_indices.append(indices_in_quadrant)
+
+    # for idx, quadrant in enumerate(nuclei_quadrant_indices):
+    #     print(f"Quadrant {idx + 1}:", file=stderr, end=' ')
+    #     for j in range(len(quadrant)):
+    #         print(f"{quadrant[j]}", file=stderr, end=" ")
+    #     print("", file=stderr)
+
+    couplings_list = []
+    intensities_list = [] 
+    hhw_list = []
+    
+    for opt_param in optimized_params_list:
+        c, i, _, _, hhw = unpack_params(opt_param, matrix_size, matrix_shape)
+        couplings_list.append(c)
+        intensities_list.append(i)
+        hhw_list.append(hhw)
+
+    # Combine couplings and intensities from each quadrant using nuclei_quadrant_indices
+    new_couplings = np.zeros_like(spin._couplings)
+    new_intensities = np.zeros(spin._nuclei_number)
+
+    for q_idx, indices in enumerate(nuclei_quadrant_indices):
+        for i in indices:
+            # For couplings, copy the row and column for each nucleus in this quadrant
+            new_couplings[i, :] = couplings_list[q_idx][i, :]
+            # For intensities, copy the value for each nucleus in this quadrant
+            new_intensities[i] = intensities_list[q_idx][i]
+
+    new_hhw = np.mean(hhw_list)
+    _, _, new_sw, new_obs, _ = unpack_params(optimized_params_list[0], matrix_size, matrix_shape)
+
+    # Use the last optimized parameters for other values
+    optimized_params = np.concatenate((new_couplings.flatten(), new_intensities, [new_sw, new_obs, new_hhw]))
+
     if dpg.does_item_exist('region_line_left'):
         dpg.delete_item('region_line_left')
     if dpg.does_item_exist('region_line_right'):
@@ -146,13 +192,10 @@ def optimize_callback(sender, app_data, user_data : "UI"):
     if not hasattr(user_data, "nmr_file") or not user_data.nmr_file:
         print("Failed to Optimize! Missing Requirement: nmr_file", file=stderr)
         return
-    if not hasattr(user_data, 'field_strength') or not user_data.field_strength:
-        print("Failed to Optimize! Missing Requirement: field_strength", file=stderr)
-        return
     
     nmr_file : str = user_data.nmr_file
     spin_matrix_file : str = user_data.spin_file
-    field_strength : float = user_data.field_strength
+    field_strength : float = user_data.sim_settings['field_strength']
     if len(user_data.water_range) == 2:
         water_range : tuple[float, float] = user_data.water_range
     elif len(user_data.water_range) > 2:
@@ -169,7 +212,7 @@ def optimize_callback(sender, app_data, user_data : "UI"):
     if dpg.does_item_exist('water_drag_right'):
         dpg.hide_item('water_drag_right')
 
-    if user_data.use_settings:
+    if user_data.sim_settings['use_settings']:
         initial_spin = user_data.spin
     else:
         spin_names, nuclei_frequencies, couplings = loadSpinFromFile(spin_matrix_file)
@@ -177,9 +220,10 @@ def optimize_callback(sender, app_data, user_data : "UI"):
 
     optimized_spin = optimize_simulation(nmr_file, initial_spin, water_range)
 
-    zoom_subplots_to_peaks(user_data)
     setattr(user_data, "spin", optimized_spin)
     update_simulation_plot(optimized_spin, user_data.points, optimized_spin.half_height_width, optimized_spin._nuclei_number)
+    update_plotting_ui(user_data)
+    zoom_subplots_to_peaks(user_data)
 
 
 def unpack_params(params : np.ndarray | list, matrix_size : int, matrix_shape : tuple):

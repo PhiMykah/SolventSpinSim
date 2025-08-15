@@ -69,7 +69,7 @@ def set_points_callback(sender, app_data, user_data : "UI") -> None:
                            user_data.spin._nuclei_number)
 
 def set_field_strength_callback(sender, app_data, user_data : "UI") -> None:
-    user_data.field_strength = app_data
+    user_data.sim_settings['field_strength'] = app_data
     if not user_data.spin.spin_names:
         return
     user_data.spin.field_strength = app_data
@@ -125,7 +125,10 @@ def set_water_range_callback(sender, app_data, user_data : "tuple[UI, Literal['l
     ui.water_range = (start, end)
 
     dpg.set_value('water_left_value', start)
+    ui.opt_settings['water_left'] = start
     dpg.set_value('water_right_value', end)
+    ui.opt_settings['water_right'] = end
+
     dpg.set_value('water_drag_left', start)
     dpg.set_value('water_drag_right', end)
     dpg.set_value('water_center_line', (start + end) / 2)
