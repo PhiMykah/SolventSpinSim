@@ -4,6 +4,7 @@ import numpy as np
 
 from ui.components import Button
 from simulate.simulate import simulate_peaklist
+from ui.themes import Theme
 
 from typing import TYPE_CHECKING, Literal
 if TYPE_CHECKING:
@@ -250,6 +251,7 @@ def set_plot_values(simulation : "np.ndarray", peak_count : int) -> None:
     else:
         dpg.add_line_series(x_data, y_data, label="Simulation", parent="main_y_axis", tag="main_plot_series")
         dpg.set_value('main_plot_added', True)
+        dpg.bind_item_theme("main_plot_series", Theme.sim_plot_theme())
 
     if dpg.get_value('peak_plot_added'):
         for i in range(peak_count):
@@ -271,6 +273,7 @@ def set_nmr_plot_values(nmr_array : "np.ndarray") -> None:
         dpg.set_value('nmr_plot', [nmr_array[0], nmr_array[1]])
     else:
         dpg.add_line_series(nmr_array[0], nmr_array[1], label='Real Data', parent="main_y_axis", tag="nmr_plot")
+        dpg.bind_item_theme("nmr_plot", Theme.nmr_plot_theme())
 
 def update_simulation_plot(spin : "Spin", points : int, hhw : list[float | int] | float | int, peak_count : int) -> None:
     """

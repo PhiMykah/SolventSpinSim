@@ -8,6 +8,7 @@ from simulate.simulate import simulate_peaklist
 from ui.callbacks.plot import update_simulation_plot, update_plotting_ui
 from ui.callbacks import zoom_subplots_to_peaks, show_item_callback
 from spin.spin import Spin, loadSpinFromFile
+from ui.themes import Theme
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -26,6 +27,7 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
             with dpg.table(tag='opt_coupling_table', header_row=True, row_background=False,
               borders_innerH=True, borders_outerH=True, borders_innerV=True,
               borders_outerV=True, delay_search=True, parent=opt_window):
+                dpg.add_table_column(label="##Top Left Corner")
                 for atom in spin.spin_names:
                     dpg.add_table_column(label=str(atom))
                 for i in range(spin._couplings.shape[0]):
@@ -35,7 +37,7 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
                             dpg.add_text(f"", tag=f'opt_coupling_{i}_{j}')
 
             dpg.add_text('Intensities:', tag='opt_intensity_title')
-            with dpg.table(tag='opt_intensity_table', row_background=False,
+            with dpg.table(tag='opt_intensity_table', header_row=False, row_background=False,
               borders_innerH=True, borders_outerH=True, borders_innerV=True,
               borders_outerV=True, delay_search=True, parent=opt_window):
                 for i in range(spin._couplings.shape[0]):
@@ -50,7 +52,7 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
             dpg.add_text(default_value=f'Observation Frequency', tag='opt_obs')
 
             dpg.add_text('Half-Height Width:', tag='opt_hhw_title')
-            with dpg.table(tag='opt_hhw_table', row_background=False,
+            with dpg.table(tag='opt_hhw_table', row_background=False, header_row=False,
               borders_innerH=True, borders_outerH=True, borders_innerV=True,
               borders_outerV=True, delay_search=True, parent=opt_window):
                 for i in range(spin._couplings.shape[0]):
@@ -104,12 +106,11 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
                 dpg.delete_item('region_line_left')
             if dpg.does_item_exist('region_line_right'):
                 dpg.delete_item('region_line_right')
-
             # Draw new region lines
             dpg.add_inf_line_series(real_x[0], label='Region Start', parent='main_x_axis', tag='region_line_left')
             dpg.add_inf_line_series(real_x[-1], label='Region End', parent='main_x_axis', tag='region_line_right')
-            # dpg.bind_item_theme('region_line_left', Theme.red_line_theme())
-            # dpg.bind_item_theme('region_line_right', Theme.red_line_theme())
+            dpg.bind_item_theme('region_line_left', Theme.region_theme())
+            dpg.bind_item_theme('region_line_right', Theme.region_theme())
 
         def quadrant_objective(params):
             couplings, intensities, spec_width, obs, hhw = unpack_params(params, matrix_size, matrix_shape)
@@ -130,11 +131,13 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
 
             if not dpg.does_item_exist('sim_opt_series'):
                 dpg.add_line_series(real_x, sim_y, label='Simulation Slice', parent='opt_y_axis', tag='sim_opt_series')
+                dpg.bind_item_theme("sim_opt_series", Theme.sim_plot_theme())
             else:
                 dpg.set_value('sim_opt_series', [real_x, sim_y])
 
             if not dpg.does_item_exist('real_opt_series'):
                 dpg.add_line_series(real_x, real_y, label='Real Slice', parent='opt_y_axis', tag='real_opt_series')
+                dpg.bind_item_theme("real_opt_series", Theme.nmr_plot_theme())
             else:
                 dpg.set_value('real_opt_series', [real_x, real_y])
 

@@ -50,7 +50,10 @@ class UI:
 
         Assumes dearpygui's context has been created
         """
-        
+        Theme.disabled_theme()
+        Theme.sim_plot_theme()
+        Theme.nmr_plot_theme()
+        Theme.region_theme()
 
         with dpg.file_dialog(directory_selector=False, show=False, callback=set_spin_file, width=800, height=400, 
                              user_data=self) as load_file_dialog:
@@ -108,8 +111,6 @@ class UI:
         Do not include `decorated` keyword argument, as it is included in functon
         """
         dpg.create_context()
-        Theme.disabled_theme()
-        Theme.red_line_theme()
         dpg.create_viewport(title=self.title, decorated=True, **viewport_kwargs)
         dpg.setup_dearpygui()
 
