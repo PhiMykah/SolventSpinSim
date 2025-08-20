@@ -99,7 +99,7 @@ def modify_matrix(sender, app_data, user_data : "tuple[UI, int, int, float]") ->
 
     f'coupling_drag_l_{i}_{j}'
     spin._couplings[i][j] = value
-    update_simulation_plot(spin, user_data[0].points, spin.half_height_width,
+    update_simulation_plot(spin, user_data[0].points, user_data[0].water_sim, spin.half_height_width,
                            spin._nuclei_number)
     update_plotting_ui(user_data[0])
     zoom_subplots_to_peaks(user_data[0])

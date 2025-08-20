@@ -53,8 +53,8 @@ def set_nmr_file_callback(sender, app_data, user_data : "UI") -> None:
     user_data.sim_settings.points = len(nmr_array[0])
 
     if dpg.get_value('main_plot_added'):
-        update_simulation_plot(user_data.spin, user_data.sim_settings.points, user_data.spin.half_height_width, 
-                           user_data.spin._nuclei_number)
+        update_simulation_plot(user_data.spin, user_data.sim_settings.points, user_data.water_sim, 
+                               user_data.spin.half_height_width, user_data.spin._nuclei_number)
     set_nmr_plot_values(nmr_array)
 
     optimize_button : "Button | None" = user_data.buttons.get('optimize', None)

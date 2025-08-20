@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from ui.ui import UI
     from spin.spin import Spin
     from typing import Any
+    from simulate.water import Water
 
 COUPLING_DRAG_HEIGHT = -0.01
 
@@ -101,7 +102,7 @@ def update_plot_callback(sender, app_data, user_data: "UI") -> None:
         if fit_axes_button is not None and not fit_axes_button.is_enabled:
             fit_axes_button.enable()
 
-    update_simulation_plot(ui.spin, ui.sim_settings.points, ui.spin.half_height_width, ui.spin._nuclei_number)
+    update_simulation_plot(ui.spin, ui.sim_settings.points, ui.water_sim, ui.spin.half_height_width, ui.spin._nuclei_number)
     fit_axes(ui.plot_tags["main"])
     create_drag_lines(ui)
     if ui is not None:
@@ -192,7 +193,7 @@ def update_drag_item(sender, app_data, user_data : tuple["UI", "str", "tuple"]):
                         dpg.set_value(drag_tag, (new_value + sign * coupling_value, COUPLING_DRAG_HEIGHT))
 
         # Simulate and zoom
-        update_simulation_plot(ui.spin, ui.sim_settings.points, ui.spin.half_height_width, ui.spin._nuclei_number)
+        update_simulation_plot(ui.spin, ui.sim_settings.points, ui.water_sim, ui.spin.half_height_width, ui.spin._nuclei_number)
         zoom_subplots_to_peaks(ui)
 
     elif tag.startswith("coupling_drag_"):
@@ -231,7 +232,7 @@ def update_drag_item(sender, app_data, user_data : tuple["UI", "str", "tuple"]):
             if dpg.does_item_exist(nuclei_tag):
                 dpg.set_value(nuclei_tag, nuclei_value)
         # Simulate and zoom
-        update_simulation_plot(ui.spin, ui.sim_settings.points, ui.spin.half_height_width, ui.spin._nuclei_number)
+        update_simulation_plot(ui.spin, ui.sim_settings.points, ui.water_sim, ui.spin.half_height_width, ui.spin._nuclei_number)
         zoom_subplots_to_peaks(ui)
     
 def fit_axes(plot_dict : dict) -> None:
@@ -275,12 +276,16 @@ def set_nmr_plot_values(nmr_array : "np.ndarray") -> None:
         dpg.add_line_series(nmr_array[0], nmr_array[1], label='Real Data', parent="main_y_axis", tag="nmr_plot")
         dpg.bind_item_theme("nmr_plot", Theme.nmr_plot_theme())
 
-def update_simulation_plot(spin : "Spin", points : int, hhw : list[float | int] | float | int, peak_count : int) -> None:
+def update_simulation_plot(spin : "Spin", points : int, water : "Water", hhw : list[float | int] | float | int, peak_count : int) -> None:
     """
     Simulates the spectrum and updates the plot for the given UI object.    
     """
     simulation = simulate_peaklist(spin.peaklist(), points, hhw)
-    set_plot_values(simulation, peak_count)
+    if water.is_enabled:
+        water_simulation = simulate_peaklist(water.peaklist, points, water.hhw)
+        set_plot_values(np.array([simulation[0], simulation[1] + water_simulation[1]]), peak_count)
+    else:
+        set_plot_values(simulation, peak_count)
 
 def update_plotting_ui(ui: "UI") -> None:
     """

@@ -1,3 +1,14 @@
+class ContextStatus:
+    is_context_enabled = False
+
+    @staticmethod
+    def set_status(status: bool) -> None:
+        ContextStatus.is_context_enabled = status
+
+    @staticmethod
+    def is_enabled() -> bool:
+        return ContextStatus.is_context_enabled
+    
 from sys import argv
 from ui import UI
 from dearpygui.dearpygui import destroy_context
@@ -14,6 +25,7 @@ def main(argv : list[str]) -> None:
     ui = UI('SolventSpinSim')
     ui.run(clear_color=(0,0,0,0))
     destroy_context()
-
+    ContextStatus.set_status(False)
+    
 if __name__ == "__main__":
     main(argv[1:])

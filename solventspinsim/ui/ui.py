@@ -1,10 +1,10 @@
 import dearpygui.dearpygui as dpg
 from ui.themes import Theme
-from ui.graphics import PlotWindow, OptimizationSettings, SimulationSettings
+from ui.graphics import PlotWindow, OptimizationSettings, SimulationSettings, WaterSettings
 from ui.callbacks import set_spin_file, set_nmr_file_callback, test_callback, fit_axes, show_item_callback
 from ui.components import Button
 from spin.spin import Spin
-
+from simulate.water import Water
 from pathlib import Path
 ASSETS_DIR = (Path(__file__).parent.parent / 'assets').resolve() # Directory of all package assets
 
@@ -27,6 +27,7 @@ class UI:
         self.sim_settings : SimulationSettings = SimulationSettings()
         self.opt_settings : OptimizationSettings = OptimizationSettings()
         self.plot_window : PlotWindow = PlotWindow()       
+        self.water_sim : Water = Water() 
 
     # ---------------------------------------------------------------------------- #
     #                              Getters and Setters                             #
@@ -54,6 +55,8 @@ class UI:
         Theme.sim_plot_theme()
         Theme.nmr_plot_theme()
         Theme.region_theme()
+
+        self.water_sim = Water()
 
         with dpg.file_dialog(directory_selector=False, show=False, callback=set_spin_file, width=800, height=400, 
                              user_data=self) as load_file_dialog:
@@ -87,6 +90,10 @@ class UI:
 
             self.opt_settings = OptimizationSettings(self, main_window, True)
 
+            dpg.add_separator()
+
+            self.water_settings = WaterSettings(self, main_window, True, False)
+
             self.plot_window = PlotWindow(self, main_window, True)        
 
             self.buttons['fit_axes'] = Button(label='Fit Axes', 
@@ -110,7 +117,10 @@ class UI:
         -----
         Do not include `decorated` keyword argument, as it is included in functon
         """
+        from main import ContextStatus
         dpg.create_context()
+        ContextStatus.set_status(True)
+        
         dpg.create_viewport(title=self.title, decorated=True, **viewport_kwargs)
         dpg.setup_dearpygui()
 

@@ -280,7 +280,7 @@ def optimize_callback(sender, app_data, user_data : "UI"):
     optimized_spin = optimize_simulation(nmr_file, initial_spin, water_range)
 
     setattr(user_data, "spin", optimized_spin)
-    update_simulation_plot(optimized_spin, user_data.points, optimized_spin.half_height_width, optimized_spin._nuclei_number)
+    update_simulation_plot(optimized_spin, user_data.points, user_data.water_sim, optimized_spin.half_height_width, optimized_spin._nuclei_number)
     update_plotting_ui(user_data)
     zoom_subplots_to_peaks(user_data)
 

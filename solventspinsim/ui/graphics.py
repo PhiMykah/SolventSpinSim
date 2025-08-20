@@ -1,4 +1,3 @@
-from operator import call
 from pathlib import Path
 import os
 import dearpygui.dearpygui as dpg
@@ -6,7 +5,7 @@ import dearpygui.dearpygui as dpg
 from ui.components import Button
 from ui.callbacks import (load_table, help_msg, set_field_strength_callback, 
                           set_points_callback, set_hhw_callback, set_intensity_callback,
-                          set_water_range_callback, test_callback)
+                          set_water_range_callback, test_callback, set_ui_water_callback)
 from optimize.optimize import optimize_callback
 from ui.themes import Theme
 
@@ -70,13 +69,18 @@ class Graphic():
         return self.params.get(key, default)
 
 class PlotWindow(Graphic):
+
+    main_plot_tag : str = 'main_plot'
+    main_x_axis_tag : str = 'main_x_axis'
+    main_y_axis_tag : str = 'main_y_axis'
+
     def __init__(self, ui : "UI | None" = None, parent : str | int | None = None, 
                  is_enabled : bool = False, height : int = 400, x_axis_label : str = 'x', 
                  y_axis_label : str = 'y') -> None:
         self.params = {
-            'main_plot': height,
-            'main_x_axis' : x_axis_label, 
-            'main_y_axis' : y_axis_label, 
+            PlotWindow.main_plot_tag : height,
+            PlotWindow.main_x_axis_tag : x_axis_label, 
+            PlotWindow.main_y_axis_tag : y_axis_label, 
         }
 
         super().__init__(ui, parent, is_enabled)
@@ -99,7 +103,7 @@ class PlotWindow(Graphic):
         dpg.add_drag_line(label=f"Water Left Limit", tag='water_drag_left', show=False,
                         color=(255, 255, 255, 255),
                         callback=set_water_range_callback, user_data=(self.ui, 'left'),
-                        default_value=dpg.get_value("water_left_value"), parent='main_plot')
+                        default_value=dpg.get_value("water_left_value"), parent='main_plot')    
         
         center = (dpg.get_value("water_left_value") + dpg.get_value("water_right_value")) / 2
 
@@ -111,18 +115,24 @@ class PlotWindow(Graphic):
                         callback=set_water_range_callback, user_data=(self.ui, 'right'), 
                         default_value=dpg.get_value("water_right_value"), parent='main_plot')
 
-
 class SimulationSettings(Graphic):
+
+    field_strength_tag : str = 'field_strength'
+    points_tag : str = 'points'
+    intensity_tag : str = 'intensity'
+    hhw_tag : str = 'hhw'
+    use_settings_tag : str = 'use_settings'
+
     def __init__(self, ui : "UI | None" = None, parent : str | int | None = None, is_enabled : bool = False, 
                  field_strength : float = 500.0, points : int = 1000, 
                  intensity : float = 1.0, half_height_width : float = 1.0, 
                  use_settings : bool = False) -> None:
         self.params = {
-            'field_strength': field_strength, # Field strength of system in Hz
-            'points' : points, # Number of points in System
-            'intensity' : intensity, # Average intensity of peaks
-            'hhw' : half_height_width, # Average half_height_width
-            'use_settings' : use_settings # Whether or not to use settings for optimization
+            SimulationSettings.field_strength_tag : field_strength, # Field strength of system in Hz
+            SimulationSettings.points_tag : points, # Number of points in System
+            SimulationSettings.intensity_tag : intensity, # Average intensity of peaks
+            SimulationSettings.hhw_tag : half_height_width, # Average half_height_width
+            SimulationSettings.use_settings_tag : use_settings # Whether or not to use settings for optimization
         }
 
         super().__init__(ui, parent, is_enabled)
@@ -182,11 +192,15 @@ class SimulationSettings(Graphic):
         dpg.set_value("points", value)
 
 class OptimizationSettings(Graphic):
+
+    water_left_tag : str = "water_left"
+    water_right_tag : str = "water_right"
+
     def __init__(self, ui : "UI | None" = None, parent : str | int | None = None, is_enabled : bool = False, 
                  water_left : float = 0.0, water_right : float = 100.0) -> None:
         self.params = {
-            "water_left": water_left, 
-            "water_right" : water_right,
+            OptimizationSettings.water_left_tag : water_left, 
+            OptimizationSettings.water_right_tag : water_right,
         }
 
         super().__init__(ui, parent, is_enabled)
@@ -213,3 +227,50 @@ class OptimizationSettings(Graphic):
                 help_msg("Rightmost region of the water signal peak")
         
         self.ui.buttons['optimize'] = Button(label='Optimize', callback=optimize_callback, user_data=self.ui, enabled=False, parent=self.parent)
+
+class WaterSettings(Graphic):
+    
+    water_enable_tag : str = "water_enable"
+    water_frequency_tag : str = "water_frequency"
+    water_intensity_tag : str = "water_intensity"
+    water_hhw_tag : str = "water_hhw"
+
+    def __init__(self, ui : "UI | None" = None, parent : str | int | None = None, is_enabled : bool = False,
+                 water_enable : bool = True, water_frequency : float = 0.0, water_intensity : float = 1.0,
+                 water_hhw : float = 0.1) -> None:
+        self.params = {
+            WaterSettings.water_enable_tag : water_enable,
+            WaterSettings.water_frequency_tag : water_frequency,
+            WaterSettings.water_intensity_tag : water_intensity,
+            WaterSettings.water_hhw_tag : water_hhw
+        }
+
+        super().__init__(ui, parent, is_enabled)
+
+    def render(self) -> None:
+        dpg.add_text(default_value="Simulation Water Signal")
+        water_enable, water_frequency, water_intensity, water_hhw = self.params.keys()
+
+        with dpg.value_registry():
+            dpg.add_bool_value(default_value=self.params[water_enable], tag=f"{water_enable}_value")
+            dpg.add_float_value(default_value=self.params[water_frequency], tag=f"{water_frequency}_value")
+            dpg.add_float_value(default_value=self.params[water_intensity], tag=f"{water_intensity}_value")
+            dpg.add_float_value(default_value=self.params[water_hhw], tag=f"{water_hhw}_value")
+
+        dpg.add_checkbox(label='Enable Water Simulation', default_value=self.params[water_enable], source=f"{water_enable}_value",
+                         tag=water_enable, callback=set_ui_water_callback, user_data=(self.ui, "is_enabled"))
+        
+        with dpg.table(header_row=False, parent=self.parent):
+            dpg.add_table_column(width=100)
+            dpg.add_table_column(width=100)
+
+            with dpg.table_row():
+                dpg.add_drag_float(label='Water Frequency', format="%.02f", tag=water_frequency, source=f"{water_frequency}_value",
+                                   callback=set_ui_water_callback, user_data=(self.ui, "frequency"))
+
+                dpg.add_drag_float(label='Water Intensity', format="%.02f", tag=water_intensity, source=f"{water_intensity}_value",
+                                   speed=0.1, callback=set_ui_water_callback, user_data=(self.ui, "intensity"))
+                
+            with dpg.table_row():
+                dpg.add_drag_float(label='Water Half-height Width', format="%.02f", tag=water_hhw, source=f"{water_hhw}_value",
+                                   speed=0.1, callback=set_ui_water_callback, user_data=(self.ui, "hhw"))
