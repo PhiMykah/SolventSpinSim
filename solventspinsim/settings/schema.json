@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SolventSpinSim Settings",
+  "type": "object",
+  "properties": {
+    "spin_file": { "type": "string" },
+    "nmr_file": { "type": "string" },
+    "matrix_table": { "type": "string" },
+    "spin": {
+      "type": "object",
+      "properties": {
+        "spin_names": { "type": "array", "items": { "type": "string" } },
+        "nuclei_frequencies": { "type": "array", "items": { "type": ["number", "integer"] } },
+        "couplings": { "type": "array", "items": { "type": "array", "items": { "type": ["number", "integer"] } } },
+        "half_height_width": { "oneOf": [
+          { "type": "array", "items": { "type": ["number", "integer"] } },
+          { "type": ["number", "integer"] }
+        ] },
+        "field_strength": { "type": "number" },
+        "intensities": { 
+          "type": ["array", "null"], 
+          "items": { "type": ["number", "integer"] } 
+        },
+        "coupling_strength": { "type": "string", "enum": ["weak", "strong"] }
+      },
+      "required": ["spin_names", "nuclei_frequencies", "couplings", "field_strength", "coupling_strength"]
+    },
+    "water_range": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "sim_settings": {
+      "type": "object",
+      "properties": {
+        "is_enabled": { "type": "boolean" },
+        "field_strength": { "type": "number" },
+        "points": { "type": "integer" },
+        "intensity": { "type": "number" },
+        "half_height_width": { "type": "number" },
+        "use_settings": { "type": "boolean" }
+      },
+      "required": ["is_enabled", "field_strength", "points", "intensity", "half_height_width", "use_settings"]
+    },
+    "opt_settings": {
+      "type": "object",
+      "properties": {
+        "is_enabled": { "type": "boolean" },
+        "water_left": { "type": "number" },
+        "water_right": { "type": "number" }
+      },
+      "required": ["is_enabled", "water_left", "water_right"]
+    },
+    "plot_window": {
+      "type": "object",
+      "properties": {
+        "is_enabled": { "type": "boolean" },
+        "height": { "type": "integer" },
+        "x_axis_label": { "type": "string" },
+        "y_axis_label": { "type": "string" }
+      },
+      "required": ["is_enabled", "height", "x_axis_label", "y_axis_label"]
+    },
+    "water_sim": {
+      "type": "object",
+      "properties": {
+        "water_enable": { "type": "boolean" },
+        "frequency": { "type": "number" },
+        "intensity": { "type": "number" },
+        "hhw": { "type": "number" }
+      },
+      "required": ["water_enable", "frequency", "intensity", "hhw"]
+    }
+  },
+  "required": [
+    "spin_file",
+    "nmr_file",
+    "matrix_table",
+    "spin",
+    "water_range",
+    "sim_settings",
+    "opt_settings",
+    "plot_window",
+    "water_sim"
+  ]
+}

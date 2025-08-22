@@ -10,6 +10,7 @@ class ContextStatus:
         return ContextStatus.is_context_enabled
     
 from sys import argv
+from settings import Settings
 from ui import UI
 from dearpygui.dearpygui import destroy_context
 
@@ -22,7 +23,8 @@ def main(argv : list[str]) -> None:
     argv : list[str]
         command-line arguments from system (exclude file_name as parameter)
     """
-    ui = UI('SolventSpinSim')
+    settings = Settings()
+    ui = UI('SolventSpinSim', settings)
     ui.run(clear_color=(0,0,0,0))
     destroy_context()
     ContextStatus.set_status(False)

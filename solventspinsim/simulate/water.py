@@ -4,11 +4,11 @@ import dearpygui.dearpygui as dpg
 from ui.graphics import WaterSettings
 
 class Water:
-    def __init__(self, frequency : float = 0.0, intensity : float = 1.0, hhw : float = 1.0, is_enabled = False):
+    def __init__(self, frequency : float = 0.0, intensity : float = 1.0, hhw : float = 1.0, water_enable = False):
         self.frequency = frequency
         self.intensity = intensity
         self.hhw = hhw
-        self.is_enabled = is_enabled
+        self.water_enable = water_enable
         self._set_peaklist(self.frequency, self.intensity)
 
     # ---------------------------------------------------------------------------- #
@@ -77,11 +77,11 @@ class Water:
     # -------------------------------- is_enabled -------------------------------- #
 
     @property
-    def is_enabled(self) -> bool:
+    def water_enable(self) -> bool:
         return self._is_enabled
     
-    @is_enabled.setter
-    def is_enabled(self, value) -> None:
+    @water_enable.setter
+    def water_enable(self, value) -> None:
         from main import ContextStatus
         self._is_enabled : bool = bool(value)
         if ContextStatus.is_enabled() and dpg.does_item_exist(f"{WaterSettings.water_enable_tag}_value"):
@@ -107,7 +107,7 @@ class Water:
         pass
 
     def toggle(self) -> None:
-        if self.is_enabled:
+        if self.water_enable:
             self.disable()
         else:
             self.enable()

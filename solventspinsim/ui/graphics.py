@@ -236,13 +236,13 @@ class WaterSettings(Graphic):
     water_hhw_tag : str = "water_hhw"
 
     def __init__(self, ui : "UI | None" = None, parent : str | int | None = None, is_enabled : bool = False,
-                 water_enable : bool = True, water_frequency : float = 0.0, water_intensity : float = 1.0,
-                 water_hhw : float = 0.1) -> None:
+                 water_enable : bool = True, frequency : float = 0.0, intensity : float = 1.0,
+                 hhw : float = 0.1) -> None:
         self.params = {
             WaterSettings.water_enable_tag : water_enable,
-            WaterSettings.water_frequency_tag : water_frequency,
-            WaterSettings.water_intensity_tag : water_intensity,
-            WaterSettings.water_hhw_tag : water_hhw
+            WaterSettings.water_frequency_tag : frequency,
+            WaterSettings.water_intensity_tag : intensity,
+            WaterSettings.water_hhw_tag : hhw
         }
 
         super().__init__(ui, parent, is_enabled)
@@ -258,7 +258,7 @@ class WaterSettings(Graphic):
             dpg.add_float_value(default_value=self.params[water_hhw], tag=f"{water_hhw}_value")
 
         dpg.add_checkbox(label='Enable Water Simulation', default_value=self.params[water_enable], source=f"{water_enable}_value",
-                         tag=water_enable, callback=set_ui_water_callback, user_data=(self.ui, "is_enabled"))
+                         tag=water_enable, callback=set_ui_water_callback, user_data=(self.ui, "water_enable"))
         
         with dpg.table(header_row=False, parent=self.parent):
             dpg.add_table_column(width=100)

@@ -1,0 +1,41 @@
+{
+    "$schema" : "./schema.json",
+    "spin_file": "",
+    "nmr_file": "",
+    "matrix_table": "",
+    "spin" : {
+        "spin_names" : [],
+        "nuclei_frequencies" : [],
+        "couplings" : [],
+        "half_height_width" : 0.5,
+        "field_strength" : 500.0,
+        "intensities" : null,
+        "coupling_strength" : "weak"
+    },
+    "water_range" : [0.0, 100.0],
+    "sim_settings" : {
+        "is_enabled" : false,
+        "field_strength" : 500.0,
+        "points" : 1000,
+        "intensity" : 1.0,
+        "half_height_width" : 1.0,
+        "use_settings" : false
+    },
+    "opt_settings" : {
+        "is_enabled" : false,
+        "water_left" : 0.0,
+        "water_right" : 100.0
+    },
+    "plot_window" : {
+        "is_enabled" : false,
+        "height" : 400,
+        "x_axis_label" : "x",
+        "y_axis_label" : "y"
+    },
+    "water_sim" : {
+        "water_enable" : false,
+        "frequency" : 0.0,
+        "intensity" : 1.0,
+        "hhw" : 0.1
+    }
+}

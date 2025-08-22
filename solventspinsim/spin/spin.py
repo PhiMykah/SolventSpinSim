@@ -125,8 +125,14 @@ class Spin:
 
     @couplings.setter
     def couplings(self, value: ArrayLike) -> None:
-        arr = np.array(value)
         n = self._nuclei_number
+        if isinstance(value, list) and len(value) == 0:
+            arr = np.empty((n, n))
+        elif isinstance(value, list) and len(value) == (n * n):
+            arr = np.array(value).reshape(n, n)
+        else:
+            arr = np.array(value)
+
         if arr.ndim != 2 or arr.shape[0] != n or arr.shape[1] != n:
             raise ValueError(f"couplings must be a 2D square matrix of shape ({n}, {n})")
         if not np.issubdtype(arr.dtype, np.number):

@@ -76,3 +76,7 @@ def set_nmr_file_callback(sender, app_data, user_data : "UI") -> None:
     dpg.show_item('water_drag_left')
     dpg.show_item('water_center_line')
     dpg.show_item('water_drag_right')
+
+def load_settings_file(sender, app_data, user_data) -> None:
+     file = app_data['file_path_name']
+     dpg.configure_app(init_file=file)

@@ -3,6 +3,10 @@
 notes.md
 data/*
 
+# ------------------------------ Configurations ------------------------------ #
+
+*.ini
+
 # ------------------------------ Python Ignores ------------------------------ #
 
 # Byte-compiled / optimized / DLL files

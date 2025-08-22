@@ -1,8 +1,9 @@
 import dearpygui.dearpygui as dpg
 from ui.themes import Theme
 from ui.graphics import PlotWindow, OptimizationSettings, SimulationSettings, WaterSettings
-from ui.callbacks import set_spin_file, set_nmr_file_callback, test_callback, fit_axes, show_item_callback
+from ui.callbacks import set_spin_file, set_nmr_file_callback, test_callback, fit_axes, show_item_callback, load_settings_file
 from ui.components import Button
+from settings import Settings
 from spin.spin import Spin
 from simulate.water import Water
 from pathlib import Path
@@ -12,22 +13,23 @@ class UI:
     """
     Class containing the graphics user interfase handling functions
     """
-    def __init__(self, title : str = 'Viewport'):
+    def __init__(self, title : str = 'Viewport', settings : Settings = Settings()):
         self.title : str = title
-        self.spin_file : str = ""
-        self.nmr_file : str = ""
-        self.mat_table : str | None = None
-        self.spin = Spin()
+        self.settings : Settings = settings
+        self.spin_file : str = settings['spin_file']
+        self.nmr_file : str = settings['nmr_file']
+        self.mat_table : str | None = None if settings["matrix_table"] == "" else settings["matrix_table"]
+        self.spin = Spin(**settings['spin'])
         self.window = None
         self.disabled_theme = None
         self.buttons: dict[str, Button] = {}
         self.subplots_tag : str = ""
         self.plot_tags : dict = {}
-        self.water_range : tuple[float, float] | tuple[float, ... ]= ()
-        self.sim_settings : SimulationSettings = SimulationSettings()
-        self.opt_settings : OptimizationSettings = OptimizationSettings()
-        self.plot_window : PlotWindow = PlotWindow()       
-        self.water_sim : Water = Water() 
+        self.water_range : tuple[float, float] | tuple[float, ... ] = settings['water_range']
+        self.sim_settings = SimulationSettings()
+        self.opt_settings = OptimizationSettings(**settings['opt_settings'])
+        self.plot_window : PlotWindow = PlotWindow(**settings['plot_window'])       
+        self.water_sim : Water = Water(**settings['water_sim']) 
 
     # ---------------------------------------------------------------------------- #
     #                              Getters and Setters                             #
@@ -63,6 +65,11 @@ class UI:
             dpg.add_file_extension("", color=(150, 255, 150, 255))
             dpg.add_file_extension("Text Files (*.txt *.csv){.txt,.csv}", color=(0, 255, 255, 255)) 
 
+        with dpg.file_dialog(directory_selector=False, show=False, callback=load_settings_file, 
+                             width=800, height=400) as load_settings_dialog:
+            dpg.add_file_extension("", color=(150, 255, 150, 255))
+            dpg.add_file_extension("Settings Files (*.ini){.ini,}", color=(0, 255, 255, 255))
+
         with dpg.file_dialog(directory_selector=False, show=False, callback=set_nmr_file_callback, width=800, height=400,
                              user_data=self) as load_nmr_dialog:
             dpg.add_file_extension("", color=(150, 255, 150, 255))
@@ -76,6 +83,9 @@ class UI:
                     dpg.add_menu_item(label="Load NMR File", callback=lambda: dpg.show_item(load_nmr_dialog), check=False)
                 dpg.add_menu_item(label="Help", callback=test_callback)
 
+                with dpg.menu(label="Settings"):
+                    dpg.add_menu_item(label="Save Settings", callback= lambda: dpg.save_init_file("settings.ini"), check=False)
+                    dpg.add_menu_item(label="Load Settings", callback= lambda: dpg.show_item(load_settings_dialog), check=False)
                 with dpg.menu(label="Widget Items"):
                     dpg.add_checkbox(label="Pick Me", callback=test_callback)
                     dpg.add_button(label="Press Me", callback=test_callback)
@@ -84,15 +94,15 @@ class UI:
                 with dpg.menu(label='View', tag='view_menu'):
                     dpg.add_menu_item(label='Show Spin Matrix Table', callback=show_item_callback, user_data='matrix_window')
 
-            self.sim_settings = SimulationSettings(self, main_window, False)
+            self.sim_settings = SimulationSettings(self, main_window, **self.settings['sim_settings'])
 
             dpg.add_separator()
 
-            self.opt_settings = OptimizationSettings(self, main_window, True)
+            self.opt_settings = OptimizationSettings(self, main_window, **self.settings['opt_settings'])
 
             dpg.add_separator()
 
-            self.water_settings = WaterSettings(self, main_window, True, False)
+            self.water_settings = WaterSettings(self, main_window, True, **self.settings['water_sim'])
 
             self.plot_window = PlotWindow(self, main_window, True)        
 
@@ -121,6 +131,7 @@ class UI:
         dpg.create_context()
         ContextStatus.set_status(True)
         
+        dpg.configure_app(init_file="settings.ini")
         dpg.create_viewport(title=self.title, decorated=True, **viewport_kwargs)
         dpg.setup_dearpygui()
 
