@@ -13,9 +13,13 @@ from ui.themes import Theme
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ui.ui import UI
+    from simulate.water import Water
 
 def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tuple,
-                         matrix_size : int, init_params : np.ndarray, water_range : tuple[float, float]) -> np.ndarray:
+                         matrix_size : int, init_params : np.ndarray, water_range : tuple[float, float], 
+                         simulate_water : bool = False) -> np.ndarray:
+    from simulate.water import Water
+
     if not dpg.does_item_exist('opt_window'):
         with dpg.window(label='Optimization in Progress', tag='opt_window', width=600, height=500) as opt_window:
             with dpg.plot(label="Optimization Snippet", tag='opt_plot', width=-1, height=400):
@@ -47,6 +51,12 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
                     for i in range(spin._couplings.shape[1]):
                         dpg.add_text(f"", tag=f'opt_intensities_{i}')
 
+            dpg.add_text(default_value=f'Water Frequency', tag='opt_wf')
+            
+            dpg.add_text(default_value=f'Water Intensity', tag='opt_wi')
+
+            dpg.add_text(default_value=f'Water Half-Height Width', tag='opt_whhw')
+
             dpg.add_text(default_value=f'Spectral Width', tag='opt_sw')
 
             dpg.add_text(default_value=f'Observation Frequency', tag='opt_obs')
@@ -66,6 +76,8 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
     else:
         dpg.show_item('opt_window')
 
+    dpg.fit_axis_data("opt_x_axis")
+    
     dpg.add_menu_item(label='Show Optimization Graph', callback=show_item_callback, user_data='opt_window', parent='view_menu')
     dpg.add_menu_item(label='Show Optimization Parameters', callback=show_item_callback, user_data='opt_params_window', parent='view_menu')
 
@@ -88,9 +100,14 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
                                                    (indices[1], indices[0]),
                                                    (indices[0], len(nmr_array[0])))
     
-    param_bounds : list[tuple[float, float]] = [(-100, 100)] * len(spin._couplings.flatten()) + \
-                                               [(-1000, 1000)] * spin._nuclei_number + \
-                                               [(1e-6, 1e6)] + [(1e-6, 1e6)] + [(0.5, 100)] * spin._nuclei_number
+    if simulate_water:
+        param_bounds : list[tuple[float, float]] = [(-100, 100)] * len(spin._couplings.flatten()) + \
+                                                [(-1000, 1000)] * spin._nuclei_number + [(water_left, water_right)] + [(-1000, 1000)] + \
+                                                [(0.5, 100)] + [(1e-6, 1e6)] + [(1e-6, 1e6)] + [(0.5, 100)] * spin._nuclei_number
+    else:
+        param_bounds : list[tuple[float, float]] = [(-100, 100)] * len(spin._couplings.flatten()) + \
+                                                [(-1000, 1000)] * spin._nuclei_number + \
+                                                [(1e-6, 1e6)] + [(1e-6, 1e6)] + [(0.5, 100)] * spin._nuclei_number
     
     for quadrant in quadrants:
         start : int = quadrant[0]
@@ -112,12 +129,28 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
             dpg.bind_item_theme('region_line_left', Theme.region_theme())
             dpg.bind_item_theme('region_line_right', Theme.region_theme())
 
+        full_x = nmr_array[0]
+
         def quadrant_objective(params):
-            couplings, intensities, spec_width, obs, hhw = unpack_params(params, matrix_size, matrix_shape)
-            new_spin = Spin(spin_names, list(spin._ppm_nuclei_frequencies), couplings, list(hhw), spin.field_strength)
-            simulation = simulate_peaklist(new_spin.peaklist(list(intensities)), len(real_x),
-                                           list(hhw), (real_x[0],real_x[-1]))
-            sim_y = list(np.ascontiguousarray(simulation[1][::-1]))
+            if simulate_water:
+                couplings, intensities, water_freq, water_intensity, water_hhw, spec_width, obs, hhw = unpack_params_water(params, matrix_size, matrix_shape)
+                new_spin = Spin(spin_names, list(spin._ppm_nuclei_frequencies), couplings, list(hhw), spin.field_strength)
+                simulation = simulate_peaklist(new_spin.peaklist(list(intensities)), len(real_x),
+                                            list(hhw), (real_x[0],real_x[-1]))
+                new_water = Water(water_freq, water_intensity, water_hhw, is_enabled=True)
+                water_simulation_full = simulate_peaklist(new_water.peaklist, len(full_x), new_water.hhw, (full_x[0], full_x[-1]))
+                water_y_quadrant = np.interp(real_x, full_x, water_simulation_full[1][::-1])
+                sim_y = list(np.ascontiguousarray(simulation[1][::-1] + water_y_quadrant))
+
+                dpg.set_value('opt_wf', f'Water Frequency {water_freq}')
+                dpg.set_value('opt_wi', f'Water Intensity: {water_intensity}')
+                dpg.set_value('opt_whhw', f'Water Half-Height Width: {water_hhw}')
+            else:
+                couplings, intensities, spec_width, obs, hhw = unpack_params(params, matrix_size, matrix_shape)
+                new_spin = Spin(spin_names, list(spin._ppm_nuclei_frequencies), couplings, list(hhw), spin.field_strength)
+                simulation = simulate_peaklist(new_spin.peaklist(list(intensities)), len(real_x),
+                                            list(hhw), (real_x[0],real_x[-1]))
+                sim_y = list(np.ascontiguousarray(simulation[1][::-1]))
 
             for i in range(matrix_shape[0]):
                 for j in range(matrix_shape[1]):
@@ -163,34 +196,64 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
     #         print(f"{quadrant[j]}", file=stderr, end=" ")
     #     print("", file=stderr)
 
-    couplings_list = []
-    intensities_list = [] 
-    hhw_list = []
-    
-    for opt_param in optimized_params_list:
-        c, i, _, _, hhw = unpack_params(opt_param, matrix_size, matrix_shape)
-        couplings_list.append(c)
-        intensities_list.append(i)
-        hhw_list.append(hhw)
+    if simulate_water:
+        couplings_list = []
+        intensities_list = [] 
+        hhw_list = []
 
-    # Combine couplings and intensities from each quadrant using nuclei_quadrant_indices
-    new_couplings = np.zeros_like(spin._couplings)
-    new_intensities = np.zeros(spin._nuclei_number)
-    new_hhw = np.zeros(spin._nuclei_number)
+        for opt_param in optimized_params_list:
+            c, i, _, _, _, _, _, hhw = unpack_params_water(opt_param, matrix_size, matrix_shape)
+            couplings_list.append(c)
+            intensities_list.append(i)
+            hhw_list.append(hhw)
 
-    for q_idx, indices in enumerate(nuclei_quadrant_indices):
-        for i in indices:
-            # For couplings, copy the row and column for each nucleus in this quadrant
-            new_couplings[i, :] = couplings_list[q_idx][i, :]
-            # For intensities, copy the value for each nucleus in this quadrant
-            new_intensities[i] = intensities_list[q_idx][i]
-            # For half_height_widths, copy the value for each nucleus in this quadrant
-            new_hhw[i] = hhw_list[q_idx][i]
+        # Combine couplings and intensities from each quadrant using nuclei_quadrant_indices
+        new_couplings = np.zeros_like(spin._couplings)
+        new_intensities = np.zeros(spin._nuclei_number)
+        new_hhw = np.zeros(spin._nuclei_number)
 
-    _, _, new_sw, new_obs, _ = unpack_params(optimized_params_list[0], matrix_size, matrix_shape)
+        for q_idx, indices in enumerate(nuclei_quadrant_indices):
+            for i in indices:
+                # For couplings, copy the row and column for each nucleus in this quadrant
+                new_couplings[i, :] = couplings_list[q_idx][i, :]
+                # For intensities, copy the value for each nucleus in this quadrant
+                new_intensities[i] = intensities_list[q_idx][i]
+                # For half_height_widths, copy the value for each nucleus in this quadrant
+                new_hhw[i] = hhw_list[q_idx][i]
 
-    # Use the last optimized parameters for other values
-    optimized_params = np.concatenate((new_couplings.flatten(), new_intensities, [new_sw, new_obs], new_hhw))
+        _, _, new_water_freq, new_water_intensity, new_water_hhw, new_sw, new_obs, _ = unpack_params_water(optimized_params_list[0], matrix_size, matrix_shape)
+
+        optimized_params = np.concatenate((new_couplings.flatten(), new_intensities, [new_water_freq, new_water_intensity, new_water_hhw, new_sw, new_obs], new_hhw))
+
+    else:
+        couplings_list = []
+        intensities_list = [] 
+        hhw_list = []
+        
+        for opt_param in optimized_params_list:
+            c, i, _, _, hhw = unpack_params(opt_param, matrix_size, matrix_shape)
+            couplings_list.append(c)
+            intensities_list.append(i)
+            hhw_list.append(hhw)
+
+        # Combine couplings and intensities from each quadrant using nuclei_quadrant_indices
+        new_couplings = np.zeros_like(spin._couplings)
+        new_intensities = np.zeros(spin._nuclei_number)
+        new_hhw = np.zeros(spin._nuclei_number)
+
+        for q_idx, indices in enumerate(nuclei_quadrant_indices):
+            for i in indices:
+                # For couplings, copy the row and column for each nucleus in this quadrant
+                new_couplings[i, :] = couplings_list[q_idx][i, :]
+                # For intensities, copy the value for each nucleus in this quadrant
+                new_intensities[i] = intensities_list[q_idx][i]
+                # For half_height_widths, copy the value for each nucleus in this quadrant
+                new_hhw[i] = hhw_list[q_idx][i]
+
+        _, _, new_sw, new_obs, _ = unpack_params(optimized_params_list[0], matrix_size, matrix_shape)
+
+        # Use the last optimized parameters for other values
+        optimized_params = np.concatenate((new_couplings.flatten(), new_intensities, [new_sw, new_obs], new_hhw))
 
     if dpg.does_item_exist('region_line_left'):
         dpg.delete_item('region_line_left')
@@ -200,7 +263,8 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
     return optimized_params
 
 
-def optimize_simulation(nmr_file : str, spin : Spin, water_range : tuple[float, float]) -> Spin:
+def optimize_simulation(nmr_file : str, spin : Spin, water_range : tuple[float, float], water : "Water | None" = None) -> "Spin | tuple[Spin, Water]":
+    from simulate.water import Water
     df = nmrPype.DataFrame(nmr_file)
 
     if df.array is None:
@@ -229,19 +293,35 @@ def optimize_simulation(nmr_file : str, spin : Spin, water_range : tuple[float, 
 
     nmr_array = np.vstack((specValHz, df.array))
 
-    initial_values : list[float] = [init_sw, init_obs]
+    if water is not None:
+        simulate_water = True
+        initial_values : list[float] = [water.frequency, water.intensity, water.hhw, init_sw, init_obs]
+    else:
+        initial_values : list[float] = [init_sw, init_obs]
+        simulate_water = False
+
     initial_intensities = [1.0] * spin._nuclei_number
-    init_params : np.ndarray = np.concatenate((spin._couplings.flatten(), initial_intensities, initial_values, spin._half_height_width))
     matrix_shape = spin._couplings.shape
     matrix_size : int = spin._couplings.size 
+    
+    init_params : np.ndarray = np.concatenate((spin._couplings.flatten(), initial_intensities, initial_values, spin._half_height_width))
 
-    optimized_params = section_optimization(nmr_array, spin, matrix_shape, matrix_size, init_params, water_range)
+    optimized_params = section_optimization(nmr_array, spin, matrix_shape, matrix_size, init_params, water_range, simulate_water)
     
-    new_couplings, new_intensities, new_spec_width, new_obs, new_hhw = unpack_params(optimized_params, matrix_size, matrix_shape)
-    
-    optimized_spin = Spin(spin.spin_names, spin._ppm_nuclei_frequencies, new_couplings, list(new_hhw), spin._field_strength, list(new_intensities))
-    print('Optimization Complete!', file=stderr)
-    return optimized_spin
+    if simulate_water:
+        new_couplings, new_intensities, new_water_freq, new_water_intensity, new_water_hhw, new_spec_width, new_obs, new_hhw = unpack_params_water(optimized_params, matrix_size, matrix_shape)
+
+        optimized_spin = Spin(spin.spin_names, spin._ppm_nuclei_frequencies, new_couplings, list(new_hhw), spin._field_strength, list(new_intensities))
+        optimized_water = Water(new_water_freq, new_water_intensity, new_water_hhw, True)
+
+        print('Optimization Complete!', file=stderr)
+        return optimized_spin, optimized_water
+    else:
+        new_couplings, new_intensities, new_spec_width, new_obs, new_hhw = unpack_params(optimized_params, matrix_size, matrix_shape)
+        
+        optimized_spin = Spin(spin.spin_names, spin._ppm_nuclei_frequencies, new_couplings, list(new_hhw), spin._field_strength, list(new_intensities))
+        print('Optimization Complete!', file=stderr)
+        return optimized_spin
 
 
 def optimize_callback(sender, app_data, user_data : "UI"):
@@ -277,10 +357,22 @@ def optimize_callback(sender, app_data, user_data : "UI"):
         spin_names, nuclei_frequencies, couplings = loadSpinFromFile(spin_matrix_file)
         initial_spin = Spin(spin_names, nuclei_frequencies, couplings, half_height_width=init_hhw, field_strength=field_strength)
 
-    optimized_spin = optimize_simulation(nmr_file, initial_spin, water_range)
+    if user_data.water_sim.is_enabled:
+        optimizations = optimize_simulation(nmr_file, initial_spin, water_range, user_data.water_sim)
+    else:
+        optimizations = optimize_simulation(nmr_file, initial_spin, water_range, None)
+
+    if isinstance(optimizations, Spin):
+        optimized_spin = optimizations
+        optimized_water = user_data.water_sim
+    else:
+        optimized_spin = optimizations[0]
+        optimized_water = optimizations[1]
 
     setattr(user_data, "spin", optimized_spin)
-    update_simulation_plot(optimized_spin, user_data.points, user_data.water_sim, optimized_spin.half_height_width, optimized_spin._nuclei_number)
+    setattr(user_data, "water_sim", optimized_water)
+
+    update_simulation_plot(optimized_spin, user_data.points, optimized_water, optimized_spin.half_height_width, optimized_spin._nuclei_number)
     update_plotting_ui(user_data)
     zoom_subplots_to_peaks(user_data)
 
@@ -288,7 +380,18 @@ def optimize_callback(sender, app_data, user_data : "UI"):
 def unpack_params(params : np.ndarray | list, matrix_size : int, matrix_shape : tuple):
     cMatrix_flat = np.array(params[:matrix_size])
     intensities = np.array(params[matrix_size:matrix_size+matrix_shape[0]])
+
     sw, obs = params[matrix_size+matrix_shape[0]:matrix_size+matrix_shape[0]+2]
     w = params[matrix_size+matrix_shape[0]+2:]
 
     return cMatrix_flat.reshape(matrix_shape), intensities, sw, obs, w
+    
+def unpack_params_water(params : np.ndarray | list, matrix_size : int, matrix_shape : tuple):
+    cMatrix_flat = np.array(params[:matrix_size])
+    intensities = np.array(params[matrix_size:matrix_size+matrix_shape[0]])
+
+    water_freq, water_intensity, water_hhw = params[matrix_size+matrix_shape[0]:matrix_size+matrix_shape[0]+3]
+    sw, obs = params[matrix_size+matrix_shape[0]+3:matrix_size+matrix_shape[0]+5]
+    w = params[matrix_size+matrix_shape[0]+5:]
+
+    return cMatrix_flat.reshape(matrix_shape), intensities, water_freq, water_intensity, water_hhw, sw, obs, w

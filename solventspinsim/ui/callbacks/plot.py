@@ -280,9 +280,17 @@ def update_simulation_plot(spin : "Spin", points : int, water : "Water", hhw : l
     """
     Simulates the spectrum and updates the plot for the given UI object.    
     """
+    if not spin._spin_names:
+        return
+    
     simulation = simulate_peaklist(spin.peaklist(), points, hhw)
     if water.is_enabled:
-        water_simulation = simulate_peaklist(water.peaklist, points, water.hhw)
+        from ui.graphics import WaterSettings
+        l_limit : float = simulation[0][0]
+        r_limit : float = simulation[0][-1]
+        dpg.configure_item(f"{WaterSettings.water_frequency_tag}", min_value=l_limit, max_value=r_limit)
+
+        water_simulation = simulate_peaklist(water.peaklist, points, water.hhw, (l_limit, r_limit))
         set_plot_values(np.array([simulation[0], simulation[1] + water_simulation[1]]), peak_count)
     else:
         set_plot_values(simulation, peak_count)

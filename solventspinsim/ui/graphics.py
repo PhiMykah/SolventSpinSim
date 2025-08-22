@@ -269,7 +269,7 @@ class WaterSettings(Graphic):
                                    callback=set_ui_water_callback, user_data=(self.ui, "frequency"))
 
                 dpg.add_drag_float(label='Water Intensity', format="%.02f", tag=water_intensity, source=f"{water_intensity}_value",
-                                   speed=0.1, callback=set_ui_water_callback, user_data=(self.ui, "intensity"))
+                                   speed=0.1, max_value=500, callback=set_ui_water_callback, user_data=(self.ui, "intensity"))
                 
             with dpg.table_row():
                 dpg.add_drag_float(label='Water Half-height Width', format="%.02f", tag=water_hhw, source=f"{water_hhw}_value",
