@@ -3,7 +3,7 @@ from ui.themes import Theme
 from ui.graphics import PlotWindow, OptimizationSettings, SimulationSettings, WaterSettings
 from ui.callbacks import set_spin_file, set_nmr_file_callback, test_callback, fit_axes, show_item_callback, load_settings_file
 from ui.components import Button
-from settings import Settings
+from settings import Settings, save_settings_callback
 from spin.spin import Spin
 from simulate.water import Water
 from pathlib import Path
@@ -75,6 +75,10 @@ class UI:
             dpg.add_file_extension("", color=(150, 255, 150, 255))
             dpg.add_file_extension("FT1 Files (*.ft1){.ft1,}", color=(0, 255, 255, 255))
 
+        with dpg.file_dialog(directory_selector=False, show=False, callback=save_settings_callback, width=800, height=400,
+                             default_filename="settings.", user_data=(self.settings, self)) as save_settings_dialog:
+            dpg.add_file_extension("JSON Files (*.json){.json,}", color=(0, 255, 255, 255))
+
         with dpg.window(label='Primary Window', width=1080, height=720) as main_window:
             self.window = main_window
             with dpg.menu_bar():
@@ -84,7 +88,7 @@ class UI:
                 dpg.add_menu_item(label="Help", callback=test_callback)
 
                 with dpg.menu(label="Settings"):
-                    dpg.add_menu_item(label="Save Settings", callback= lambda: dpg.save_init_file("settings.ini"), check=False)
+                    dpg.add_menu_item(label="Save Settings", callback=lambda: dpg.show_item(save_settings_dialog), check=False)
                     dpg.add_menu_item(label="Load Settings", callback= lambda: dpg.show_item(load_settings_dialog), check=False)
                 with dpg.menu(label="Widget Items"):
                     dpg.add_checkbox(label="Pick Me", callback=test_callback)
@@ -130,8 +134,7 @@ class UI:
         from main import ContextStatus
         dpg.create_context()
         ContextStatus.set_status(True)
-        
-        dpg.configure_app(init_file="settings.ini")
+
         dpg.create_viewport(title=self.title, decorated=True, **viewport_kwargs)
         dpg.setup_dearpygui()
 

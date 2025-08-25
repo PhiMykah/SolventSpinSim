@@ -1,5 +1,10 @@
 {
     "$schema" : "./schema.json",
+    "debug_window": {
+        "pos": [0, 0],
+        "size": [400, 400],
+        "collapsed": false
+    },
     "spin_file": "",
     "nmr_file": "",
     "matrix_table": "",

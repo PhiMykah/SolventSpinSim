@@ -137,7 +137,7 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
                 new_spin = Spin(spin_names, list(spin._ppm_nuclei_frequencies), couplings, list(hhw), spin.field_strength)
                 simulation = simulate_peaklist(new_spin.peaklist(list(intensities)), len(real_x),
                                             list(hhw), (real_x[0],real_x[-1]))
-                new_water = Water(water_freq, water_intensity, water_hhw, is_enabled=True)
+                new_water = Water(water_freq, water_intensity, water_hhw, water_enable=True)
                 water_simulation_full = simulate_peaklist(new_water.peaklist, len(full_x), new_water.hhw, (full_x[0], full_x[-1]))
                 water_y_quadrant = np.interp(real_x, full_x, water_simulation_full[1][::-1])
                 sim_y = list(np.ascontiguousarray(simulation[1][::-1] + water_y_quadrant))
@@ -357,7 +357,7 @@ def optimize_callback(sender, app_data, user_data : "UI"):
         spin_names, nuclei_frequencies, couplings = loadSpinFromFile(spin_matrix_file)
         initial_spin = Spin(spin_names, nuclei_frequencies, couplings, half_height_width=init_hhw, field_strength=field_strength)
 
-    if user_data.water_sim.is_enabled:
+    if user_data.water_sim.water_enable:
         optimizations = optimize_simulation(nmr_file, initial_spin, water_range, user_data.water_sim)
     else:
         optimizations = optimize_simulation(nmr_file, initial_spin, water_range, None)

@@ -284,7 +284,7 @@ def update_simulation_plot(spin : "Spin", points : int, water : "Water", hhw : l
         return
     
     simulation = simulate_peaklist(spin.peaklist(), points, hhw)
-    if water.is_enabled:
+    if water.water_enable:
         from ui.graphics import WaterSettings
         l_limit : float = simulation[0][0]
         r_limit : float = simulation[0][-1]

@@ -3,6 +3,25 @@
   "title": "SolventSpinSim Settings",
   "type": "object",
   "properties": {
+    "debug_window": {
+      "type": "object",
+      "properties": {
+        "pos" : {
+          "type": "array",
+          "items": { "type" : "integer" },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "size" : {
+          "type": "array",
+          "items": { "type" : "integer" },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "collapsed" : { "type": "boolean" }
+      },
+      "required": ["pos", "size", "collapsed"]
+    },
     "spin_file": { "type": "string" },
     "nmr_file": { "type": "string" },
     "matrix_table": { "type": "string" },
@@ -74,6 +93,7 @@
     }
   },
   "required": [
+    "debug_window",
     "spin_file",
     "nmr_file",
     "matrix_table",
