@@ -3,15 +3,14 @@ import dearpygui.dearpygui as dpg
 import numpy as np
 
 from ui.components import Button
-from simulate.simulate import simulate_peaklist
 from ui.themes import Theme
 
 from typing import TYPE_CHECKING, Literal
 if TYPE_CHECKING:
-    from ui.ui import UI
-    from spin.spin import Spin
+    from ui import UI
+    from spin import Spin
     from typing import Any
-    from simulate.water import Water
+    from simulate import Water
 
 COUPLING_DRAG_HEIGHT = -0.01
 
@@ -277,6 +276,7 @@ def set_nmr_plot_values(nmr_array : "np.ndarray") -> None:
         dpg.bind_item_theme("nmr_plot", Theme.nmr_plot_theme())
 
 def update_simulation_plot(spin : "Spin", points : int, water : "Water", hhw : list[float | int] | float | int, peak_count : int) -> None:
+    from simulate import simulate_peaklist
     """
     Simulates the spectrum and updates the plot for the given UI object.    
     """
@@ -285,7 +285,7 @@ def update_simulation_plot(spin : "Spin", points : int, water : "Water", hhw : l
     
     simulation = simulate_peaklist(spin.peaklist(), points, hhw)
     if water.water_enable:
-        from ui.graphics import WaterSettings
+        from graphics import WaterSettings
         l_limit : float = simulation[0][0]
         r_limit : float = simulation[0][-1]
         dpg.configure_item(f"{WaterSettings.water_frequency_tag}", min_value=l_limit, max_value=r_limit)

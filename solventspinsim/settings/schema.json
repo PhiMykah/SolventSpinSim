@@ -24,12 +24,11 @@
     },
     "spin_file": { "type": "string" },
     "nmr_file": { "type": "string" },
-    "matrix_table": { "type": "string" },
     "spin": {
       "type": "object",
       "properties": {
         "spin_names": { "type": "array", "items": { "type": "string" } },
-        "nuclei_frequencies": { "type": "array", "items": { "type": ["number", "integer"] } },
+        "ppm_nuclei_frequencies": { "type": "array", "items": { "type": ["number", "integer"] } },
         "couplings": { "type": "array", "items": { "type": "array", "items": { "type": ["number", "integer"] } } },
         "half_height_width": { "oneOf": [
           { "type": "array", "items": { "type": ["number", "integer"] } },
@@ -96,7 +95,6 @@
     "debug_window",
     "spin_file",
     "nmr_file",
-    "matrix_table",
     "spin",
     "water_range",
     "sim_settings",

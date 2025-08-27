@@ -1,1 +1,1 @@
-from .settings import Settings, save_settings_callback
+from .settings import Settings, save_settings_callback, load_settings_callback

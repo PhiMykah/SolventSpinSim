@@ -1,7 +1,7 @@
 from faulthandler import is_enabled
 from simulate.types import PeakList
 import dearpygui.dearpygui as dpg
-from ui.graphics import WaterSettings
+from graphics import WaterSettings
 
 class Water:
     def __init__(self, frequency : float = 0.0, intensity : float = 1.0, hhw : float = 1.0, water_enable = False):

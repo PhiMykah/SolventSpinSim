@@ -51,7 +51,7 @@ class Spin:
             spin_names : list of str
                 Names of the atoms for each nuclei frequency
             nuclei_frequencies : list of float
-                List of resonance frequencies (in Hz) for each nucleus in the spin system
+                List of resonance frequencies (in ppm to be converted to Hz) for each nucleus in the spin system
             couplings : ArrayLike
                 2D matrix (n x n) of scalar coupling constants (in Hz) between nuclei. Each row corresponds to a nucleus,
                 

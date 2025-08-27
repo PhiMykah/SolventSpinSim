@@ -4,21 +4,20 @@ import nmrPype
 import dearpygui.dearpygui as dpg
 from scipy.optimize import minimize
 
-from simulate.simulate import simulate_peaklist
-from ui.callbacks.plot import update_simulation_plot, update_plotting_ui
-from ui.callbacks import zoom_subplots_to_peaks, show_item_callback
-from spin.spin import Spin, loadSpinFromFile
+from simulate import simulate_peaklist
+from callbacks import update_simulation_plot, update_plotting_ui, zoom_subplots_to_peaks, show_item_callback
+from spin import Spin, loadSpinFromFile
 from ui.themes import Theme
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from ui.ui import UI
-    from simulate.water import Water
+    from ui import UI
+    from simulate import Water
 
 def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tuple,
                          matrix_size : int, init_params : np.ndarray, water_range : tuple[float, float], 
                          simulate_water : bool = False) -> np.ndarray:
-    from simulate.water import Water
+    from simulate import Water
 
     if not dpg.does_item_exist('opt_window'):
         with dpg.window(label='Optimization in Progress', tag='opt_window', width=600, height=500) as opt_window:
@@ -264,7 +263,7 @@ def section_optimization(nmr_array : np.ndarray, spin : Spin, matrix_shape : tup
 
 
 def optimize_simulation(nmr_file : str, spin : Spin, water_range : tuple[float, float], water : "Water | None" = None) -> "Spin | tuple[Spin, Water]":
-    from simulate.water import Water
+    from simulate import Water
     df = nmrPype.DataFrame(nmr_file)
 
     if df.array is None:

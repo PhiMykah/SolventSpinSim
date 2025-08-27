@@ -4,7 +4,7 @@ from .plot import update_simulation_plot, update_plotting_ui, zoom_subplots_to_p
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from ui.ui import UI
+    from ui import UI
     from typing import Literal
 
 # ---------------------------------------------------------------------------- #

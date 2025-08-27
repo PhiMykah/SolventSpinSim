@@ -1,12 +1,15 @@
 import dearpygui.dearpygui as dpg
-from ui.themes import Theme
-from ui.graphics import PlotWindow, OptimizationSettings, SimulationSettings, WaterSettings
-from ui.callbacks import set_spin_file, set_nmr_file_callback, test_callback, fit_axes, show_item_callback, load_settings_file
-from ui.components import Button
-from settings import Settings, save_settings_callback
-from spin.spin import Spin
-from simulate.water import Water
+
+from .themes import Theme
+from .components import Button
+
+from callbacks import load_dialog_callback, set_spin_file, set_nmr_file_callback, test_callback, fit_axes, show_item_callback, load_settings_file
+from graphics import PlotWindow, OptimizationSettings, SimulationSettings, WaterSettings
+from settings import Settings, save_settings_callback, load_settings_callback
+from spin import Spin
+from simulate import Water
 from pathlib import Path
+
 ASSETS_DIR = (Path(__file__).parent.parent / 'assets').resolve() # Directory of all package assets
 
 class UI:
@@ -18,7 +21,7 @@ class UI:
         self.settings : Settings = settings
         self.spin_file : str = settings['spin_file']
         self.nmr_file : str = settings['nmr_file']
-        self.mat_table : str | None = None if settings["matrix_table"] == "" else settings["matrix_table"]
+        self.mat_table : str = ""
         self.spin = Spin(**settings['spin'])
         self.window = None
         self.disabled_theme = None
@@ -65,15 +68,15 @@ class UI:
             dpg.add_file_extension("", color=(150, 255, 150, 255))
             dpg.add_file_extension("Text Files (*.txt *.csv){.txt,.csv}", color=(0, 255, 255, 255)) 
 
-        with dpg.file_dialog(directory_selector=False, show=False, callback=load_settings_file, 
-                             width=800, height=400) as load_settings_dialog:
-            dpg.add_file_extension("", color=(150, 255, 150, 255))
-            dpg.add_file_extension("Settings Files (*.ini){.ini,}", color=(0, 255, 255, 255))
-
         with dpg.file_dialog(directory_selector=False, show=False, callback=set_nmr_file_callback, width=800, height=400,
                              user_data=self) as load_nmr_dialog:
             dpg.add_file_extension("", color=(150, 255, 150, 255))
             dpg.add_file_extension("FT1 Files (*.ft1){.ft1,}", color=(0, 255, 255, 255))
+
+        with dpg.file_dialog(directory_selector=False, show=False, callback=load_settings_callback, 
+                             width=800, height=400, user_data=(self.settings, self)) as load_settings_dialog:
+            dpg.add_file_extension("", color=(150, 255, 150, 255))
+            dpg.add_file_extension("Settings Files (*.json){.json,}", color=(0, 255, 255, 255))
 
         with dpg.file_dialog(directory_selector=False, show=False, callback=save_settings_callback, width=800, height=400,
                              default_filename="settings.", user_data=(self.settings, self)) as save_settings_dialog:
@@ -83,8 +86,10 @@ class UI:
             self.window = main_window
             with dpg.menu_bar():
                 with dpg.menu(label="File"):
-                    dpg.add_menu_item(label="Load Spin Matrix", callback=lambda: dpg.show_item(load_file_dialog), check=False)
-                    dpg.add_menu_item(label="Load NMR File", callback=lambda: dpg.show_item(load_nmr_dialog), check=False)
+                    dpg.add_menu_item(label="Load Spin Matrix", callback=load_dialog_callback, check=False,
+                                      user_data=(self, load_file_dialog, "spin"))
+                    dpg.add_menu_item(label="Load NMR File", callback=load_dialog_callback, check=False,
+                                      user_data=(self, load_nmr_dialog, "nmr"))
                 dpg.add_menu_item(label="Help", callback=test_callback)
 
                 with dpg.menu(label="Settings"):

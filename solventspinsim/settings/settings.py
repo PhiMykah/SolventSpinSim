@@ -7,7 +7,7 @@ SCHEMA_PATH = Path(__file__).parent / "schema.json"
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from ui.ui import UI
+    from ui import UI
 
 class Settings:
 	def __init__(self, json_path: Path = DEFAULT_JSON_PATH):
@@ -18,7 +18,7 @@ class Settings:
 		self.values = {}
 		self.load_from_json(self.json_path)
 
-	def load_from_json(self, filepath : Path):
+	def load_from_json(self, filepath : Path | str):
 		"""Load values from a JSON file"""
 		with open(filepath, 'r') as f:
 			self.values = json.load(f)
@@ -29,7 +29,7 @@ class Settings:
 			json.dump(self.values, f, indent=2, separators=(',', ': '))
 
 	def update_settings(self, ui : "UI") -> None:
-		from ui.graphics import SimulationSettings, OptimizationSettings, PlotWindow
+		from graphics import SimulationSettings, OptimizationSettings, PlotWindow
 
 		self.values["$schema"] = f"file:///{str(SCHEMA_PATH).replace("\\","/")}"
 		# Files
@@ -39,7 +39,7 @@ class Settings:
 		# Spin Object
 		spin : dict = {
 			"spin_names" : ui.spin.spin_names,
-			"nuclei_frequencies" : ui.spin.nuclei_frequencies,
+			"nuclei_frequencies" : ui.spin._ppm_nuclei_frequencies,
 			"half_height_width" : ui.spin.half_height_width,
 			"field_strength" : ui.spin.field_strength,
 			"intensities" : ui.spin.intensities,
@@ -84,6 +84,66 @@ class Settings:
 		}
 		self.values["water_sim"] = water_sim
 
+	def update_ui(self, ui : "UI") -> None:
+		from graphics import SimulationSettings, OptimizationSettings, PlotWindow
+		from spin import Spin
+		from simulate import Water
+
+		# Files
+		ui.spin_file = self.values.get("spin_file", "")
+		ui.nmr_file = self.values.get("nmr_file", "")
+		ui.mat_table = self.values.get("matrix_table", "")
+
+		# Spin Object
+		spin : dict = self.values.get("spin", {})
+		spin_names = spin.get("spin_names", [])
+		ppm_nuclei_frequencies = spin.get("nuclei_frequencies", [])
+		couplings = [c for c in spin.get("couplings", [])]
+		half_height_width = spin.get("half_height_width", 1.0)
+		field_strength = spin.get("field_strength", 500.0)
+		intensities = spin.get("intensities", [])
+		coupling_strength = spin.get("coupling_strength", "weak")
+		loaded_spin = Spin(spin_names, ppm_nuclei_frequencies, couplings, half_height_width, field_strength, intensities, coupling_strength)
+		ui.spin = loaded_spin
+
+		# Water range
+		water_range = self.values.get("water_range", [0.0, 1000.0])
+		ui.water_range = (water_range[0], water_range[1])
+
+		# Sim Settings Object
+		sim_settings : dict = self.values.get("sim_settings", {})
+		ui.sim_settings.is_enabled = sim_settings.get("is_enabled", False)
+		ui.sim_settings[SimulationSettings.field_strength_tag] = sim_settings.get("field_strength", 500.0)
+		ui.sim_settings[SimulationSettings.points_tag] = sim_settings.get("points", 1000)
+		ui.sim_settings[SimulationSettings.intensity_tag] = sim_settings.get("intensity", 1.0)
+		ui.sim_settings[SimulationSettings.hhw_tag] = sim_settings.get("half_height_width", 1.0)
+		ui.sim_settings[SimulationSettings.use_settings_tag] = sim_settings.get("use_settings", False)
+		ui.sim_settings.update_ui_values()
+
+		# Optimization Settings Object
+		opt_settings : dict = self.values.get("opt_settings", {})
+		ui.opt_settings.is_enabled = opt_settings.get("is_enabled", False)
+		ui.opt_settings[OptimizationSettings.water_left_tag] = opt_settings.get("water_left", 0.0)
+		ui.opt_settings[OptimizationSettings.water_right_tag] = opt_settings.get("water_right", 10.0)
+		ui.opt_settings.update_ui_values()
+
+		# Plot Window Object
+		plot_window : dict = self.values.get("plot_window", {})
+		ui.plot_window.is_enabled = plot_window.get("is_enabled", False)
+		ui.plot_window[PlotWindow.main_plot_tag] = plot_window.get("height", 400)
+		ui.plot_window[PlotWindow.main_x_axis_tag] = plot_window.get("x_axis_label", "x")
+		ui.plot_window[PlotWindow.main_y_axis_tag] = plot_window.get("y_axis_label", "y")
+		ui.plot_window.update_ui_values()
+		
+		# Water Sim
+		water_sim : dict = self.values.get("water_sim", {})
+		water_enable = water_sim.get("water_enable", False)
+		water_frequency = water_sim.get("frequency", 0.0)
+		water_intensity = water_sim.get("intensity", 1.0)
+		water_hhw = water_sim.get("hhw", 0.0)
+		loaded_water = Water(water_frequency, water_intensity, water_hhw, water_enable)
+		ui.water_sim = loaded_water
+
 	# ---------------------------------------------------------------------------- #
 	#                                 Magic Methods                                #
 	# ---------------------------------------------------------------------------- #
@@ -102,3 +162,11 @@ def save_settings_callback(sender, app_data, user_data : "tuple[Settings, UI]") 
 
 	settings.update_settings(ui)
 	settings.save_to_json(filepath)
+
+def load_settings_callback(sender, app_data, user_data : "tuple[Settings, UI]") -> None:
+	settings = user_data[0]
+	ui = user_data[1]
+	filepath : str = app_data['file_path_name']
+
+	settings.load_from_json(filepath)
+	settings.update_ui(ui)

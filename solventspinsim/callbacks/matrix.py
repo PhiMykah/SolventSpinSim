@@ -6,8 +6,8 @@ from .callbacks import help_msg
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from ui.ui import UI
-    from spin.spin import Spin
+    from ui import UI
+    from spin import Spin
 
 def matrix_table(ui : "UI") -> None:
     with dpg.window(label='Spin Matrix', show=False, tag='matrix_window'):
@@ -42,10 +42,11 @@ def load_table(sender, app_data, user_data : "UI") -> None:
         return
     spin : "Spin" = ui.spin
 
-    if hasattr(ui, 'mat_table') and ui.mat_table is not None:
+    if hasattr(ui, 'mat_table') and ui.mat_table != "":
         for i,row in enumerate(np.array(spin.couplings)):
             for j, col in enumerate(row):
-                dpg.configure_item(f'coupling_{i}_{j}', min_value=min_value, max_value=max_value)
+                if dpg.does_item_exist(f'coupling_{i}_{j}'):
+                    dpg.configure_item(f'coupling_{i}_{j}', min_value=min_value, max_value=max_value)
         return
 
     table_tag = 'matrix_table'
