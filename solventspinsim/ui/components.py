@@ -1,6 +1,6 @@
-from gc import enable
 import dearpygui.dearpygui as dpg
 from ui.themes import Theme
+
 
 class Button:
     def __init__(self, *args, **kwargs):
@@ -12,15 +12,15 @@ class Button:
         """
 
         # Extract a user-provided tag or create our own
-        self.label : str = kwargs.get("label", "")
-        self.tag : int | str = kwargs.get("tag", dpg.generate_uuid())
+        self.label: str = kwargs.get("label", "")
+        self.tag: int | str = kwargs.get("tag", dpg.generate_uuid())
         kwargs["tag"] = self.tag
         kwargs["label"] = self.label
         self.is_enabled = False
 
         # Create the button
         self.button = dpg.add_button(*args, **kwargs)
-        if kwargs.get('enabled', True) is False:
+        if kwargs.get("enabled", True) is False:
             self.disable()
 
     def disable(self) -> None:
@@ -44,6 +44,6 @@ class Button:
             self.hide()
         else:
             self.show()
-    
+
     def get_tag(self) -> int | str:
         return self.tag

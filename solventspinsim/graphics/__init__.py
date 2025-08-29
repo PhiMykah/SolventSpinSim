@@ -1,5 +1,13 @@
 from .graphics import Graphic
-from .water import WaterSettings
-from .simulation import SimulationSettings
 from .optimization import OptimizationSettings
 from .plot import PlotWindow
+from .simulation import SimulationSettings
+from .water import WaterSettings
+
+__all__ = [
+    "Graphic",
+    "WaterSettings",
+    "SimulationSettings",
+    "OptimizationSettings",
+    "PlotWindow",
+]

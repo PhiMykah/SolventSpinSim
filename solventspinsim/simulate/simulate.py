@@ -1,5 +1,5 @@
 import numpy as np
-from simulate.types import *
+from simulate.types import PeakList, PeakArray
 
 def simulate_peaklist(peaklist : PeakList, points : int = 800, half_height_width : list[float | int] | float | int = 1,
                       freq_limits : tuple[float,float] | None = None) -> PeakArray:

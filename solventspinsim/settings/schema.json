@@ -22,6 +22,7 @@
       },
       "required": ["pos", "size", "collapsed"]
     },
+    "title": { "type": "string" },
     "spin_file": { "type": "string" },
     "nmr_file": { "type": "string" },
     "spin": {
@@ -93,6 +94,7 @@
   },
   "required": [
     "debug_window",
+    "title",
     "spin_file",
     "nmr_file",
     "spin",

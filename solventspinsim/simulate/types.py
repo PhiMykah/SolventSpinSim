@@ -1,6 +1,5 @@
 # Typing #
-from typing import Literal, Any, Generator
-from numpy.typing import ArrayLike
+from typing import Any
 import numpy as np
 
 Peak = tuple[float,float,int]

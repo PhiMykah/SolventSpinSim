@@ -1,12 +1,20 @@
-import numpy as np
-from spin.types import *
 from collections import Counter
+from typing import Generator, Literal
+
+import numpy as np
+from numpy.typing import ArrayLike
+from spin.types import Peak, PeakList
 
 # ---------------------------------------------------------------------------- #
 #                              Generate Couplings                              #
 # ---------------------------------------------------------------------------- #
 
-def gen_peaklist_weak(nuclei_frequencies : list[float] | list[int], J_couplings : np.ndarray, intensities : list[float | int]) -> PeakList:
+
+def gen_peaklist_weak(
+    nuclei_frequencies: list[float] | list[int],
+    J_couplings: np.ndarray,
+    intensities: list[float | int],
+) -> PeakList:
     """
     Generate a peak list for a weakly coupled spin system.
     This function simulates the NMR peak list for a set of nuclei with given resonance frequencies and J-coupling constants,
@@ -19,7 +27,7 @@ def gen_peaklist_weak(nuclei_frequencies : list[float] | list[int], J_couplings 
             List of resonance frequencies (in Hz) for each nucleus
         J_couplings : np.ndarray
             2D matrix (n x n) of scalar coupling constants (in Hz) between nuclei. Each row corresponds to a nucleus,
-                
+
             and each element in the row is the coupling to another nucleus
     Returns
     -------
@@ -33,26 +41,33 @@ def gen_peaklist_weak(nuclei_frequencies : list[float] | list[int], J_couplings 
     n = len(nuclei_frequencies)
 
     if len(intensities) < n:
-        intensities = intensities + [1] * (n-len(intensities))
+        intensities = intensities + [1] * (n - len(intensities))
     if len(intensities) > n:
         intensities = intensities[:n]
 
-    peaklist : PeakList = []
+    peaklist: PeakList = []
     for i, nuclei in enumerate(nuclei_frequencies):
-        couplings: Generator[tuple[ArrayLike, int]] = ((j, 1) for j in J_couplings[i] if j != 0)
-        signal : PeakList = _multiplet((nuclei, intensities[i], i), couplings)
+        couplings: Generator[tuple[ArrayLike, int]] = (
+            (j, 1) for j in J_couplings[i] if j != 0
+        )
+        signal: PeakList = _multiplet((nuclei, intensities[i], i), couplings)
         peaklist += signal
     return _reduce_peaks(sorted(peaklist))
 
-def gen_peaklist_strong(nuclei_frequencies : list[float] | list[int], J_couplings : np.ndarray) -> PeakList:
+
+def gen_peaklist_strong(
+    nuclei_frequencies: list[float] | list[int], J_couplings: np.ndarray
+) -> PeakList:
     # Adapted from nmrsim's qm.py
-    return [(0,0,0)]
+    return [(0, 0, 0)]
+
 
 # ---------------------------------------------------------------------------- #
 #                               Helper Functions                               #
 # ---------------------------------------------------------------------------- #
 
-def _multiplet(signal : tuple, couplings : Generator[tuple[ArrayLike, int]]) -> PeakList:
+
+def _multiplet(signal: tuple, couplings: Generator[tuple[ArrayLike, int]]) -> PeakList:
     """
     Generate a multiplet peak list by iteratively applying couplings to an initial signal.
 
@@ -73,11 +88,12 @@ def _multiplet(signal : tuple, couplings : Generator[tuple[ArrayLike, int]]) -> 
     -----
         Adapted from nmrsim's firstorder.py
     """
-    peaklist : PeakList = [signal]
+    peaklist: PeakList = [signal]
     for coupling in couplings:
         for _ in range(coupling[1]):
             peaklist = _doublet(peaklist, coupling[0])
     return sorted(_reduce_peaks(peaklist))
+
 
 def _doublet(peaklist, coupling_constant) -> PeakList:
     """
@@ -101,12 +117,13 @@ def _doublet(peaklist, coupling_constant) -> PeakList:
     -----
         Adapted from nmrsim's firstorder.py
     """
-    new_peaklist : PeakList = []
-    # For every peak in the list, split the frequency and half the intensity to form doublets 
+    new_peaklist: PeakList = []
+    # For every peak in the list, split the frequency and half the intensity to form doublets
     for freq, intensity, idx in peaklist:
         new_peaklist.append((freq - coupling_constant / 2, intensity / 2, idx))
         new_peaklist.append((freq + coupling_constant / 2, intensity / 2, idx))
     return new_peaklist
+
 
 def _reduce_peaks(unsorted_peaklist, tolerance=0) -> PeakList:
     """
@@ -120,8 +137,8 @@ def _reduce_peaks(unsorted_peaklist, tolerance=0) -> PeakList:
         unsorted_peaklist : list[tuple[float,float,int]]
             The list of peaks to be reduced
         tolerance : float, optional
-            The maximum allowed difference between peak positions 
-            
+            The maximum allowed difference between peak positions
+
             for them to be considered adjacent and combined, Defaults to 0
 
     Returns
@@ -134,10 +151,10 @@ def _reduce_peaks(unsorted_peaklist, tolerance=0) -> PeakList:
     -----
         Adapted from nmrsim's math.py
     """
-    new_peaklist : PeakList = []
-    work : PeakList = [] # Peaklist of current peaks to be tested
+    new_peaklist: PeakList = []
+    work: PeakList = []  # Peaklist of current peaks to be tested
     # Ensure peak list is sorted before performing reduction
-    peaklist : PeakList = sorted(unsorted_peaklist) 
+    peaklist: PeakList = sorted(unsorted_peaklist)
 
     for peak in peaklist:
         if not work:
@@ -151,13 +168,14 @@ def _reduce_peaks(unsorted_peaklist, tolerance=0) -> PeakList:
             new_peaklist.append(peak_sum(work, parent_idx))
 
             work = [peak]
-    if work: # Add the remaining work peaks after loop
+    if work:  # Add the remaining work peaks after loop
         parent_idx = _mode_smallest(work)
         new_peaklist.append(peak_sum(work, parent_idx))
 
     return new_peaklist
 
-def peak_sum(peaklist : PeakList, parent_idx : int) -> Peak:
+
+def peak_sum(peaklist: PeakList, parent_idx: int) -> Peak:
     """
     Sums up a peak list by adding intensity and finding the average frequency
 
@@ -175,10 +193,11 @@ def peak_sum(peaklist : PeakList, parent_idx : int) -> Peak:
     -----
         Adapted from nmrsim's math.py
     """
-    frequency_total : float | Literal[0] = sum(peak[0] for peak in peaklist)
-    intensity_total : float | Literal[0] = sum(peak[1] for peak in peaklist)
-    
+    frequency_total: float | Literal[0] = sum(peak[0] for peak in peaklist)
+    intensity_total: float | Literal[0] = sum(peak[1] for peak in peaklist)
+
     return (frequency_total / len(peaklist), intensity_total, parent_idx)
+
 
 def _mode_smallest(peak_group: PeakList) -> int:
     """

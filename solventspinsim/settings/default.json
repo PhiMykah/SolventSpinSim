@@ -5,6 +5,7 @@
         "size": [400, 400],
         "collapsed": false
     },
+    "title": "SolventSpinSim",
     "spin_file": "",
     "nmr_file": "",
     "spin" : {

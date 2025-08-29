@@ -1,7 +1,5 @@
-from faulthandler import is_enabled
 from simulate.types import PeakList
 import dearpygui.dearpygui as dpg
-from graphics import WaterSettings
 
 class Water:
     def __init__(self, frequency : float = 0.0, intensity : float = 1.0, hhw : float = 1.0, water_enable = False):
@@ -26,10 +24,11 @@ class Water:
     
     @frequency.setter
     def frequency(self, value) -> None:
+        from graphics import WaterSettings
         try:
-            from main import ContextStatus
+            from main import DPGStatus
             self._frequency : float = float(value)
-            if ContextStatus.is_enabled() and dpg.does_item_exist(f"{WaterSettings.water_frequency_tag}_value"):
+            if DPGStatus.is_context_enabled() and dpg.does_item_exist(f"{WaterSettings.water_frequency_tag}_value"):
                 dpg.set_value(f"{WaterSettings.water_frequency_tag}_value", float(value))
             self._set_peaklist(self._frequency, self.intensity)
         except TypeError:
@@ -46,10 +45,11 @@ class Water:
     
     @intensity.setter
     def intensity(self, value) -> None:
+        from graphics import WaterSettings
         try:
-            from main import ContextStatus
+            from main import DPGStatus
             self._intensity : float = float(value)
-            if ContextStatus.is_enabled() and dpg.does_item_exist(f"{WaterSettings.water_intensity_tag}_value"):
+            if DPGStatus.is_context_enabled() and dpg.does_item_exist(f"{WaterSettings.water_intensity_tag}_value"):
                 dpg.set_value(f"{WaterSettings.water_intensity_tag}_value", float(value))
             self._set_peaklist(self.frequency, self._intensity)
         except TypeError:
@@ -66,10 +66,11 @@ class Water:
         
     @hhw.setter
     def hhw(self, value) -> None:
+        from graphics import WaterSettings
         try:
-            from main import ContextStatus
+            from main import DPGStatus
             self._hhw : float = float(value)
-            if ContextStatus.is_enabled() and dpg.does_item_exist(f"{WaterSettings.water_hhw_tag}_value"):
+            if DPGStatus.is_context_enabled() and dpg.does_item_exist(f"{WaterSettings.water_hhw_tag}_value"):
                 dpg.set_value(f"{WaterSettings.water_hhw_tag}_value", float(value))
         except TypeError:
             raise TypeError("Invalid value for water half-height width! Must be a string or real number")
@@ -82,9 +83,10 @@ class Water:
     
     @water_enable.setter
     def water_enable(self, value) -> None:
-        from main import ContextStatus
+        from graphics import WaterSettings
+        from main import DPGStatus
         self._is_enabled : bool = bool(value)
-        if ContextStatus.is_enabled() and dpg.does_item_exist(f"{WaterSettings.water_enable_tag}_value"):
+        if DPGStatus.is_context_enabled() and dpg.does_item_exist(f"{WaterSettings.water_enable_tag}_value"):
             dpg.set_value(f"{WaterSettings.water_enable_tag}_value", bool(value))
 
     # --------------------------------- peaklist --------------------------------- #
