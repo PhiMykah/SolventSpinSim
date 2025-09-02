@@ -88,10 +88,13 @@ class UI:
 
         Assumes dearpygui's context has been created
         """
+        Theme.main_themes()
         Theme.disabled_theme()
         Theme.sim_plot_theme()
         Theme.nmr_plot_theme()
         Theme.region_theme()
+
+        dpg.bind_theme(Theme.main_themes("dark"))
 
         self.water_sim = Water()
 
