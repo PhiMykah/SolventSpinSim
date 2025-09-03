@@ -35,6 +35,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Main settings arguments
     parser.add_argument(
+        "--no-ui",
+        action="store_true",
+        dest="ui_disabled",
+        help="Run in command-line instead of with GUI",
+    )
+    parser.add_argument(
         "--settings",
         type=str,
         metavar="'Settings Path'",
@@ -55,6 +61,14 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="'NMR File Path'",
         dest="nmr_file",
         help="Path to NMR data file",
+    )
+    parser.add_argument(
+        "--output-file",
+        "--out",
+        type=str,
+        metavar="'Output File Path.ft1'",
+        dest="output_file",
+        help="Output file location for corrected simulation",
     )
 
     # Water range Settings
@@ -93,7 +107,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         metavar="INTENSITY",
         dest="sim_intensity",
-        help="Simulation intensity",
+        help="Simulation intensity for each peak",
     )
     parser.add_argument(
         "--hhw",
@@ -194,56 +208,60 @@ def build_parser() -> argparse.ArgumentParser:
 class SettingsArguments(argparse.Namespace):
     def __init__(
         self,
+        ui_disabled: bool,
         settings: str | None,
         spin_file: str | None,
         nmr_file: str | None,
+        output_file: str | None,
         field_strength: float | None,
         water_range: list[float],
-        sim_enabled: bool | None,
+        sim_enabled: bool,
         sim_points: int | None,
         sim_intensity: float | None,
         sim_hhw: float | None,
-        sim_use_settings: bool | None,
-        opt_enabled: bool | None,
+        sim_use_settings: bool,
+        opt_enabled: bool,
         water_bounds: list[float],
-        plot_enabled: bool | None,
+        plot_enabled: bool,
         plot_height: int | None,
         plot_x_label: str | None,
         plot_y_label: str | None,
-        water_enable: bool | None,
+        water_enable: bool,
         water_frequency: float | None,
         water_intensity: float | None,
         water_hhw: float | None,
         ui_title: str,
     ) -> None:
         # Main settings arguments
+        self.ui_disabled: bool = ui_disabled
         self.settings: str | None = settings
         self.spin_file: str | None = spin_file
         self.nmr_file: str | None = nmr_file
+        self.output_file: str | None = output_file
 
         # Water range Settings
         self.water_range: list[float] = water_range
 
         # Simulation Settings
-        self.sim_enabled: bool | None = sim_enabled
+        self.sim_enabled: bool = sim_enabled
         self.field_strength: float | None = field_strength
         self.sim_points: int | None = sim_points
         self.sim_intensity: float | None = sim_intensity
         self.sim_hhw: float | None = sim_hhw
-        self.sim_use_settings: bool | None = sim_use_settings
+        self.sim_use_settings: bool = sim_use_settings
 
         # Optimization settings
-        self.opt_enabled: bool | None = opt_enabled
+        self.opt_enabled: bool = opt_enabled
         self.water_bounds: list[float] = water_bounds
 
         # Plot window settings
-        self.plot_enabled: bool | None = plot_enabled
+        self.plot_enabled: bool = plot_enabled
         self.plot_height: int | None = plot_height
         self.plot_x_label: str | None = plot_x_label
         self.plot_y_label: str | None = plot_y_label
 
         # Water simulation settings
-        self.water_enable: bool | None = water_enable
+        self.water_enable: bool = water_enable
         self.water_frequency: float | None = water_frequency
         self.water_intensity: float | None = water_intensity
         self.water_hhw: float | None = water_hhw
@@ -256,9 +274,11 @@ def parse_args(argv: list[str] | None = None) -> SettingsArguments:
     parser: argparse.ArgumentParser = build_parser()
     args: argparse.Namespace = parser.parse_args(argv)
     return SettingsArguments(
+        args.ui_disabled,
         args.settings,
         args.spin_file,
         args.nmr_file,
+        args.output_file,
         args.field_strength,
         args.water_range,
         args.sim_enabled,

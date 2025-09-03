@@ -4,21 +4,17 @@ from typing import TYPE_CHECKING
 import dearpygui.dearpygui as dpg
 import nmrPype
 import numpy as np
-from callbacks import (
-    show_item_callback,
-    update_plotting_ui,
-    update_simulation_plot,
-    zoom_subplots_to_peaks,
-)
+
 from scipy.optimize import minimize
 from simulate import simulate_peaklist
-from spin import Spin, loadSpinFromFile
+from spin import Spin
 from ui.themes import Theme
+
+from .display import _optimization_ui, _update_optimization_ui
+from .helper import unpack_params, unpack_params_water
 
 if TYPE_CHECKING:
     from simulate import Water
-    from ui import UI
-
 
 def section_optimization(
     nmr_array: np.ndarray,
@@ -29,111 +25,11 @@ def section_optimization(
     water_range: tuple[float, float],
     simulate_water: bool = False,
 ) -> np.ndarray:
+    from main import DPGStatus
     from simulate import Water
 
-    if not dpg.does_item_exist("opt_window"):
-        with dpg.window(
-            label="Optimization in Progress", tag="opt_window", width=600, height=500
-        ) as opt_window:
-            with dpg.plot(
-                label="Optimization Snippet", tag="opt_plot", width=-1, height=400
-            ):
-                dpg.add_plot_legend()
-                dpg.add_plot_axis(dpg.mvXAxis, label="x", tag="opt_x_axis")
-                dpg.add_plot_axis(dpg.mvYAxis, label="y", tag="opt_y_axis")
-        with dpg.window(
-            label="Optimization Parameters",
-            tag="opt_params_window",
-            width=400,
-            height=600,
-        ) as opt_window:
-            dpg.add_text("Couplings:", tag="opt_coupling_title")
-            with dpg.table(
-                tag="opt_coupling_table",
-                header_row=True,
-                row_background=False,
-                borders_innerH=True,
-                borders_outerH=True,
-                borders_innerV=True,
-                borders_outerV=True,
-                delay_search=True,
-                parent=opt_window,
-            ):
-                dpg.add_table_column(label="##Top Left Corner")
-                for atom in spin.spin_names:
-                    dpg.add_table_column(label=str(atom))
-                for i in range(spin._couplings.shape[0]):
-                    with dpg.table_row():
-                        dpg.add_text(spin.spin_names[i], tag=f"coupling_row_{i}_header")
-                        for j in range(spin._couplings.shape[-1]):
-                            dpg.add_text("", tag=f"opt_coupling_{i}_{j}")
-
-            dpg.add_text("Intensities:", tag="opt_intensity_title")
-            with dpg.table(
-                tag="opt_intensity_table",
-                header_row=False,
-                row_background=False,
-                borders_innerH=True,
-                borders_outerH=True,
-                borders_innerV=True,
-                borders_outerV=True,
-                delay_search=True,
-                parent=opt_window,
-            ):
-                for i in range(spin._couplings.shape[0]):
-                    dpg.add_table_column()
-
-                with dpg.table_row():
-                    for i in range(spin._couplings.shape[1]):
-                        dpg.add_text("", tag=f"opt_intensities_{i}")
-
-            dpg.add_text(default_value="Water Frequency", tag="opt_wf")
-
-            dpg.add_text(default_value="Water Intensity", tag="opt_wi")
-
-            dpg.add_text(default_value="Water Half-Height Width", tag="opt_whhw")
-
-            dpg.add_text(default_value="Spectral Width", tag="opt_sw")
-
-            dpg.add_text(default_value="Observation Frequency", tag="opt_obs")
-
-            dpg.add_text("Half-Height Width:", tag="opt_hhw_title")
-            with dpg.table(
-                tag="opt_hhw_table",
-                row_background=False,
-                header_row=False,
-                borders_innerH=True,
-                borders_outerH=True,
-                borders_innerV=True,
-                borders_outerV=True,
-                delay_search=True,
-                parent=opt_window,
-            ):
-                for i in range(spin._couplings.shape[0]):
-                    dpg.add_table_column()
-
-                with dpg.table_row():
-                    for i in range(spin._couplings.shape[1]):
-                        dpg.add_text("", tag=f"opt_hhw_{i}")
-        with dpg.value_registry():
-            dpg.add_bool_value(default_value=False, tag="opt_series_added")
-    else:
-        dpg.show_item("opt_window")
-
-    dpg.fit_axis_data("opt_x_axis")
-
-    dpg.add_menu_item(
-        label="Show Optimization Graph",
-        callback=show_item_callback,
-        user_data="opt_window",
-        parent="view_menu",
-    )
-    dpg.add_menu_item(
-        label="Show Optimization Parameters",
-        callback=show_item_callback,
-        user_data="opt_params_window",
-        parent="view_menu",
-    )
+    if DPGStatus.is_context_enabled():
+        _optimization_ui(spin)
 
     optimized_params_list: list = []
     spin_names = spin.spin_names
@@ -185,26 +81,27 @@ def section_optimization(
 
         # print(f"({start}, {end}) -> ({real_x[0]}, {real_x[-1]})", file=stderr)
 
-        if dpg.does_item_exist("main_x_axis"):
-            if dpg.does_item_exist("region_line_left"):
-                dpg.delete_item("region_line_left")
-            if dpg.does_item_exist("region_line_right"):
-                dpg.delete_item("region_line_right")
-            # Draw new region lines
-            dpg.add_inf_line_series(
-                real_x[0],
-                label="Region Start",
-                parent="main_x_axis",
-                tag="region_line_left",
-            )
-            dpg.add_inf_line_series(
-                real_x[-1],
-                label="Region End",
-                parent="main_x_axis",
-                tag="region_line_right",
-            )
-            dpg.bind_item_theme("region_line_left", Theme.region_theme())
-            dpg.bind_item_theme("region_line_right", Theme.region_theme())
+        if DPGStatus.is_context_enabled():
+            if dpg.does_item_exist("main_x_axis"):
+                if dpg.does_item_exist("region_line_left"):
+                    dpg.delete_item("region_line_left")
+                if dpg.does_item_exist("region_line_right"):
+                    dpg.delete_item("region_line_right")
+                # Draw new region lines
+                dpg.add_inf_line_series(
+                    real_x[0],
+                    label="Region Start",
+                    parent="main_x_axis",
+                    tag="region_line_left",
+                )
+                dpg.add_inf_line_series(
+                    real_x[-1],
+                    label="Region End",
+                    parent="main_x_axis",
+                    tag="region_line_right",
+                )
+                dpg.bind_item_theme("region_line_left", Theme.region_theme())
+                dpg.bind_item_theme("region_line_right", Theme.region_theme())
 
         full_x = nmr_array[0]
 
@@ -249,9 +146,10 @@ def section_optimization(
                     np.ascontiguousarray(simulation[1][::-1] + water_y_quadrant)
                 )
 
-                dpg.set_value("opt_wf", f"Water Frequency {water_freq}")
-                dpg.set_value("opt_wi", f"Water Intensity: {water_intensity}")
-                dpg.set_value("opt_whhw", f"Water Half-Height Width: {water_hhw}")
+                if DPGStatus.is_context_enabled():
+                    dpg.set_value("opt_wf", f"Water Frequency {water_freq}")
+                    dpg.set_value("opt_wi", f"Water Intensity: {water_intensity}")
+                    dpg.set_value("opt_whhw", f"Water Half-Height Width: {water_hhw}")
             else:
                 couplings, intensities, spec_width, obs, hhw = unpack_params(
                     params, matrix_size, matrix_shape
@@ -271,39 +169,17 @@ def section_optimization(
                 )
                 sim_y = list(np.ascontiguousarray(simulation[1][::-1]))
 
-            for i in range(matrix_shape[0]):
-                for j in range(matrix_shape[1]):
-                    dpg.set_value(f"opt_coupling_{i}_{j}", f"{couplings[i][j]}")
-            for i in range(matrix_shape[0]):
-                dpg.set_value(f"opt_intensities_{i}", f"{intensities[i]}")
-            dpg.set_value("opt_sw", f"Spectral Width: {spec_width:.03f}")
-            dpg.set_value("opt_obs", f"Observation Frequency: {spec_width:.03f}")
-            for i in range(matrix_shape[0]):
-                dpg.set_value(f"opt_hhw_{i}", f"{hhw[i]}")
-
-            if not dpg.does_item_exist("sim_opt_series"):
-                dpg.add_line_series(
-                    real_x,
-                    sim_y,
-                    label="Simulation Slice",
-                    parent="opt_y_axis",
-                    tag="sim_opt_series",
-                )
-                dpg.bind_item_theme("sim_opt_series", Theme.sim_plot_theme())
-            else:
-                dpg.set_value("sim_opt_series", [real_x, sim_y])
-
-            if not dpg.does_item_exist("real_opt_series"):
-                dpg.add_line_series(
+            if DPGStatus.is_context_enabled():
+                _update_optimization_ui(
+                    matrix_shape,
+                    couplings,
+                    intensities,
+                    spec_width,
+                    hhw,
                     real_x,
                     real_y,
-                    label="Real Slice",
-                    parent="opt_y_axis",
-                    tag="real_opt_series",
+                    sim_y,
                 )
-                dpg.bind_item_theme("real_opt_series", Theme.nmr_plot_theme())
-            else:
-                dpg.set_value("real_opt_series", [real_x, real_y])
 
             return np.sqrt(np.mean((sim_y - real_y) ** 2))
 
@@ -404,10 +280,11 @@ def section_optimization(
             (new_couplings.flatten(), new_intensities, [new_sw, new_obs], new_hhw)
         )
 
-    if dpg.does_item_exist("region_line_left"):
-        dpg.delete_item("region_line_left")
-    if dpg.does_item_exist("region_line_right"):
-        dpg.delete_item("region_line_right")
+    if DPGStatus.is_context_enabled():
+        if dpg.does_item_exist("region_line_left"):
+            dpg.delete_item("region_line_left")
+        if dpg.does_item_exist("region_line_right"):
+            dpg.delete_item("region_line_right")
 
     return optimized_params
 
@@ -525,109 +402,3 @@ def optimize_simulation(
         )
         print("Optimization Complete!", file=stderr)
         return optimized_spin
-
-
-def optimize_callback(sender, app_data, user_data: "UI"):
-    if not hasattr(user_data, "spin_file") or not user_data.spin_file:
-        print("Failed to Optimize! Missing Requirement: spin_file", file=stderr)
-        return
-    if not hasattr(user_data, "nmr_file") or not user_data.nmr_file:
-        print("Failed to Optimize! Missing Requirement: nmr_file", file=stderr)
-        return
-
-    nmr_file: str = user_data.nmr_file
-    spin_matrix_file: str = user_data.spin_file
-    field_strength: float = user_data.sim_settings["field_strength"]
-    if len(user_data.water_range) == 2:
-        water_range: tuple[float, float] = user_data.water_range
-    elif len(user_data.water_range) > 2:
-        water_range: tuple[float, float] = (
-            user_data.water_range[0],
-            user_data.water_range[1],
-        )
-    else:
-        raise ValueError("Water range is invalid. Water range must be two values!")
-
-    init_hhw: list[float | int] = user_data.spin.half_height_width
-
-    if dpg.does_item_exist("water_drag_left"):
-        dpg.hide_item("water_drag_left")
-    if dpg.does_item_exist("water_center_line"):
-        dpg.hide_item("water_center_line")
-    if dpg.does_item_exist("water_drag_right"):
-        dpg.hide_item("water_drag_right")
-
-    if user_data.sim_settings["use_settings"]:
-        initial_spin = user_data.spin
-    else:
-        spin_names, nuclei_frequencies, couplings = loadSpinFromFile(spin_matrix_file)
-        initial_spin = Spin(
-            spin_names,
-            nuclei_frequencies,
-            couplings,
-            half_height_width=init_hhw,
-            field_strength=field_strength,
-        )
-
-    if user_data.water_sim.water_enable:
-        optimizations = optimize_simulation(
-            nmr_file, initial_spin, water_range, user_data.water_sim
-        )
-    else:
-        optimizations = optimize_simulation(nmr_file, initial_spin, water_range, None)
-
-    if isinstance(optimizations, Spin):
-        optimized_spin = optimizations
-        optimized_water = user_data.water_sim
-    else:
-        optimized_spin = optimizations[0]
-        optimized_water = optimizations[1]
-
-    setattr(user_data, "spin", optimized_spin)
-    setattr(user_data, "water_sim", optimized_water)
-
-    update_simulation_plot(
-        optimized_spin,
-        user_data.points,
-        optimized_water,
-        optimized_spin.half_height_width,
-        optimized_spin._nuclei_number,
-    )
-    update_plotting_ui(user_data)
-    zoom_subplots_to_peaks(user_data)
-
-
-def unpack_params(params: np.ndarray | list, matrix_size: int, matrix_shape: tuple):
-    cMatrix_flat = np.array(params[:matrix_size])
-    intensities = np.array(params[matrix_size : matrix_size + matrix_shape[0]])
-
-    sw, obs = params[matrix_size + matrix_shape[0] : matrix_size + matrix_shape[0] + 2]
-    w = params[matrix_size + matrix_shape[0] + 2 :]
-
-    return cMatrix_flat.reshape(matrix_shape), intensities, sw, obs, w
-
-
-def unpack_params_water(
-    params: np.ndarray | list, matrix_size: int, matrix_shape: tuple
-):
-    cMatrix_flat = np.array(params[:matrix_size])
-    intensities = np.array(params[matrix_size : matrix_size + matrix_shape[0]])
-
-    water_freq, water_intensity, water_hhw = params[
-        matrix_size + matrix_shape[0] : matrix_size + matrix_shape[0] + 3
-    ]
-    sw, obs = params[
-        matrix_size + matrix_shape[0] + 3 : matrix_size + matrix_shape[0] + 5
-    ]
-    w = params[matrix_size + matrix_shape[0] + 5 :]
-
-    return (
-        cMatrix_flat.reshape(matrix_shape),
-        intensities,
-        water_freq,
-        water_intensity,
-        water_hhw,
-        sw,
-        obs,
-        w,
-    )

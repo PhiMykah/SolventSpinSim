@@ -6,8 +6,10 @@
         "collapsed": false
     },
     "title": "SolventSpinSim",
+    "ui_disabled": false,
     "spin_file": "",
     "nmr_file": "",
+    "output_file": "",
     "spin" : {
         "spin_names" : [],
         "nuclei_frequencies" : [],

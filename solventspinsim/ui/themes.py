@@ -575,3 +575,7 @@ class Theme:
 
             cls._region_theme = region_theme
         return cls._region_theme
+
+
+def change_theme_callback(sender, app_data: str, user_data) -> None:
+    dpg.bind_theme(Theme.main_themes(app_data.lower()))

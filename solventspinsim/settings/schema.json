@@ -23,8 +23,10 @@
       "required": ["pos", "size", "collapsed"]
     },
     "title": { "type": "string" },
+    "ui_disabled": { "type": "boolean"},
     "spin_file": { "type": "string" },
     "nmr_file": { "type": "string" },
+    "output_file" : { "type": "string" },
     "spin": {
       "type": "object",
       "properties": {
@@ -95,8 +97,10 @@
   "required": [
     "debug_window",
     "title",
+    "ui_disabled",
     "spin_file",
     "nmr_file",
+    "output_file",
     "spin",
     "water_range",
     "sim_settings",

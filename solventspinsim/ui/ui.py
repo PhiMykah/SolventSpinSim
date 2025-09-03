@@ -15,7 +15,7 @@ from simulate import Water
 from spin import Spin
 
 from .components import Button
-from .themes import Theme
+from .themes import Theme, change_theme_callback
 
 ASSETS_DIR = (
     Path(__file__).parent.parent / "assets"
@@ -32,6 +32,7 @@ class UI:
         self.settings: Settings = settings
         self.spin_file: str = settings["spin_file"]
         self.nmr_file: str = settings["nmr_file"]
+        self.output_file: str = settings["output_file"]
         self.mat_table: str = ""
         self.spin = Spin(**settings["spin"])
         self.window = None
@@ -177,6 +178,14 @@ class UI:
                         callback=lambda: dpg.show_item(load_settings_dialog),
                         check=False,
                     )
+
+                with dpg.menu(label="Theme"):
+                    dpg.add_radio_button(
+                        ("Dark", "Light"),
+                        callback=change_theme_callback,
+                        default_value="Dark",
+                    )
+
                 with dpg.menu(label="Widget Items"):
                     dpg.add_checkbox(label="Pick Me", callback=test_callback)
                     dpg.add_button(label="Press Me", callback=test_callback)

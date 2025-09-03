@@ -54,6 +54,7 @@ class PlotWindow(Graphic):
             dpg.add_bool_value(default_value=False, tag="drag_points_visible")
             dpg.add_bool_value(default_value=False, tag="main_plot_added")
             dpg.add_bool_value(default_value=False, tag="peak_plot_added")
+            dpg.add_bool_value(default_value=False, tag="subplots_added")
 
         dpg.add_drag_line(
             label="Water Left Limit",

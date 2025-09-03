@@ -23,7 +23,9 @@ class Settings:
         self.values = {}
         if args is not None:
             if args.settings is not None:
+                self.json_path = Path(args.settings)
                 self.load_from_json(args.settings)
+                self.load_from_args(args)
             else:
                 self.load_from_json(DEFAULT_JSON_PATH)
                 self.load_from_args(args)
@@ -32,6 +34,7 @@ class Settings:
 
     def load_from_args(self, args: SettingsArguments) -> None:
         # Main settings arguments
+        self._set_attribute("ui_disabled", value=args.ui_disabled)
         self._set_attribute("spin_file", value=args.spin_file)
         self._set_attribute("nmr_file", value=args.nmr_file)
 
@@ -39,16 +42,18 @@ class Settings:
         self._set_attribute("water_range", args.water_range)
 
         # Simulation Settings
-        self.values["sim_settings"] = {}
+        if not self.values["sim_settings"]:
+            self.values["sim_settings"] = {}
         self._set_attribute("sim_settings", "is_enabled", value=args.sim_enabled)
         self._set_attribute("sim_settings", "field_strength", value=args.field_strength)
         self._set_attribute("sim_settings", "points", value=args.sim_points)
-        self._set_attribute("sim_settings", "intensities", value=args.sim_intensity)
+        self._set_attribute("sim_settings", "intensity", value=args.sim_intensity)
         self._set_attribute("sim_settings", "half_height_width", value=args.sim_hhw)
         self._set_attribute("sim_settings", "use_settings", value=args.sim_use_settings)
 
         # Optimization settings
-        self.values["opt_settings"] = {}
+        if not self.values["opt_settings"]:
+            self.values["opt_settings"] = {}
         self._set_attribute("opt_settings", "is_enabled", value=args.opt_enabled)
         if args.water_bounds is not None:
             self._set_attribute(
@@ -59,14 +64,16 @@ class Settings:
             )
 
         # Plot window settings
-        self.values["plot_window"] = {}
+        if not self.values["plot_window"]:
+            self.values["plot_window"] = {}
         self._set_attribute("plot_window", "is_enabled", value=args.plot_enabled)
         self._set_attribute("plot_window", "height", value=args.plot_height)
         self._set_attribute("plot_window", "x_axis_label", value=args.plot_x_label)
         self._set_attribute("plot_window", "y_axis_label", value=args.plot_y_label)
 
         # Water simulation settings
-        self.values["water_sim"] = {}
+        if not self.values["water_sim"]:
+            self.values["water_sim"] = {}
         self._set_attribute("water_sim", "water_enable", value=args.water_enable)
         self._set_attribute("water_sim", "frequency", value=args.water_frequency)
         self._set_attribute("water_sim", "intensity", value=args.water_intensity)
@@ -91,8 +98,11 @@ class Settings:
         self.values["$schema"] = f"file:///{str(SCHEMA_PATH).replace('\\', '/')}"
         # Files
         self.values["title"] = ui.title
+        self.values["ui_disabled"] = False
         self.values["spin_file"] = ui.spin_file
         self.values["nmr_file"] = ui.nmr_file
+        self.values["output_file"] = ui.output_file
+
         # Spin Object
         spin: dict = {
             "spin_names": ui.spin.spin_names,
@@ -153,6 +163,7 @@ class Settings:
         ui.spin_file = self.values.get("spin_file", "")
         ui.nmr_file = self.values.get("nmr_file", "")
         ui.mat_table = self.values.get("matrix_table", "")
+        ui.output_file = self.values.get("output_file", "output.ft1")
 
         # Spin Object
         spin: dict = self.values.get("spin", {})
@@ -285,9 +296,20 @@ def load_settings_callback(sender, app_data, user_data: "tuple[Settings, UI]") -
 
 
 def _set_nested(dict_, set_value, *keys, default=None):
-    target_dict = _get_nested(dict_, *keys, default=None)
+    target_dict = _get_nested_dict(dict_, *keys, default=default)
     target_dict[keys[-1]] = set_value
     return target_dict
+
+
+def _get_nested_dict(dict_, *keys, default=None):
+    if not isinstance(dict_, dict):
+        raise TypeError("Object must be dictionary to obtain nested dictionary!")
+    if not dict_:
+        return dict_
+    elem = dict_.get(keys[0], default)
+    if len(keys) == 1:
+        return dict_
+    return _get_nested_dict(elem, *keys[1:], default=default)
 
 
 def _get_nested(dict_, *keys, default=None):
@@ -297,8 +319,5 @@ def _get_nested(dict_, *keys, default=None):
         return dict_
     elem = dict_.get(keys[0], default)
     if len(keys) == 1:
-        if elem is None:
-            return dict_
-        else:
-            return elem
-    return _get_nested(elem, *keys[1:], default=default)
+        return elem
+    return _get_nested_dict(elem, *keys[1:], default=default)
