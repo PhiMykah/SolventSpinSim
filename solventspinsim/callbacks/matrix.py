@@ -12,8 +12,8 @@ from .plot import (
 )
 
 if TYPE_CHECKING:
-    from spin import Spin
-    from ui import UI
+    from solventspinsim.spin import Spin
+    from solventspinsim.ui import UI
 
 
 def matrix_table(ui: "UI") -> None:

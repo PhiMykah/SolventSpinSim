@@ -1,14 +1,14 @@
 from typing import TYPE_CHECKING
 
 import dearpygui.dearpygui as dpg
-from callbacks import help_msg, set_water_range_callback
-from optimize import optimize_callback
-from ui.components import Button
 
-from .graphics import Graphic
+from solventspinsim.callbacks import help_msg, set_water_range_callback
+from solventspinsim.graphics import Graphic
+from solventspinsim.optimize import optimize_callback
+from solventspinsim.ui.components import Button
 
 if TYPE_CHECKING:
-    from ui import UI
+    from solventspinsim.ui import UI
 
 
 class OptimizationSettings(Graphic):

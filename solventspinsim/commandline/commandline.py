@@ -1,8 +1,9 @@
 from nmrPype import DataFrame, write_to_file
 from numpy import array as nparray
-from settings import Settings
-from simulate.water import Water
-from spin import Spin, loadSpinFromFile
+
+from solventspinsim.settings import Settings
+from solventspinsim.simulate.water import Water
+from solventspinsim.spin import Spin, loadSpinFromFile
 
 
 class CommandLine:
@@ -12,7 +13,7 @@ class CommandLine:
         self.water = Water()
 
     def run(self) -> None:
-        from simulate import simulate_peaklist
+        from solventspinsim.simulate import simulate_peaklist
 
         optimizations: Spin | tuple[Spin, Water] = self._optimize()
 
@@ -42,7 +43,7 @@ class CommandLine:
 
             output_result = [simulation[0], simulation[1] + water_simulation[1]]
         else:
-            output_result = simulation
+            output_result = [simulation[0], simulation[1]]
 
         self._save_to_nmr(output_result)
 
@@ -105,7 +106,7 @@ class CommandLine:
         )
 
     def _optimize(self) -> Spin | tuple[Spin, Water]:
-        from optimize import optimize_simulation
+        from solventspinsim.optimize import optimize_simulation
 
         nmr_file: str = self.settings["nmr_file"]
         opt_settings: dict = self.settings["opt_settings"]
@@ -130,7 +131,7 @@ class CommandLine:
     def _save_to_nmr(self, simulation) -> None:
         df = DataFrame(self.settings["nmr_file"])
 
-        result_array = nparray(simulation, dtype="float32")
+        result_array = nparray(simulation[1][::-1], dtype="float32")
         df.setArray(result_array)
 
         output_file: str = (

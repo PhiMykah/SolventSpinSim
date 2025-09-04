@@ -5,11 +5,11 @@ import dearpygui.dearpygui as dpg
 from .graphics import Graphic
 
 if TYPE_CHECKING:
-    from ui import UI
+    from solventspinsim.ui import UI
 
 
 def set_ui_water_callback(sender, app_data, user_data: "tuple[UI, str]") -> None:
-    from callbacks import (
+    from solventspinsim.callbacks import (
         update_plotting_ui,
         update_simulation_plot,
         zoom_subplots_to_peaks,

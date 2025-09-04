@@ -1,18 +1,27 @@
 from pathlib import Path
 
 import dearpygui.dearpygui as dpg
-from callbacks import (
+from solventspinsim.callbacks import (
     fit_axes,
     load_dialog_callback,
-    set_nmr_file_callback,
-    set_spin_file,
+    load_settings_dialog,
+    nmr_file_dialog,
+    save_dialog_callback,
+    save_optimization_dialog,
+    save_settings_dialog,
     show_item_callback,
+    spin_file_dialog,
     test_callback,
 )
-from graphics import OptimizationSettings, PlotWindow, SimulationSettings, WaterSettings
-from settings import Settings, load_settings_callback, save_settings_callback
-from simulate import Water
-from spin import Spin
+from solventspinsim.graphics import (
+    OptimizationSettings,
+    PlotWindow,
+    SimulationSettings,
+    WaterSettings,
+)
+from solventspinsim.settings import Settings
+from solventspinsim.simulate import Water
+from solventspinsim.spin import Spin
 
 from .components import Button
 from .themes import Theme, change_theme_callback
@@ -58,7 +67,7 @@ class UI:
 
     @title.setter
     def title(self, value: str) -> None:
-        from main import DPGStatus
+        from solventspinsim.main import DPGStatus
 
         if isinstance(value, str):
             self._title: str = value
@@ -99,55 +108,11 @@ class UI:
 
         self.water_sim = Water()
 
-        with dpg.file_dialog(
-            directory_selector=False,
-            show=False,
-            callback=set_spin_file,
-            width=800,
-            height=400,
-            user_data=self,
-        ) as load_file_dialog:
-            dpg.add_file_extension("", color=(150, 255, 150, 255))
-            dpg.add_file_extension(
-                "Text Files (*.txt *.csv){.txt,.csv}", color=(0, 255, 255, 255)
-            )
-
-        with dpg.file_dialog(
-            directory_selector=False,
-            show=False,
-            callback=set_nmr_file_callback,
-            width=800,
-            height=400,
-            user_data=self,
-        ) as load_nmr_dialog:
-            dpg.add_file_extension("", color=(150, 255, 150, 255))
-            dpg.add_file_extension("FT1 Files (*.ft1){.ft1,}", color=(0, 255, 255, 255))
-
-        with dpg.file_dialog(
-            directory_selector=False,
-            show=False,
-            callback=load_settings_callback,
-            width=800,
-            height=400,
-            user_data=(self.settings, self),
-        ) as load_settings_dialog:
-            dpg.add_file_extension("", color=(150, 255, 150, 255))
-            dpg.add_file_extension(
-                "Settings Files (*.json){.json,}", color=(0, 255, 255, 255)
-            )
-
-        with dpg.file_dialog(
-            directory_selector=False,
-            show=False,
-            callback=save_settings_callback,
-            width=800,
-            height=400,
-            default_filename="settings.",
-            user_data=(self.settings, self),
-        ) as save_settings_dialog:
-            dpg.add_file_extension(
-                "JSON Files (*.json){.json,}", color=(0, 255, 255, 255)
-            )
+        load_file = spin_file_dialog(self)
+        load_nmr = nmr_file_dialog(self)
+        save_opt = save_optimization_dialog(self)
+        save_settings = save_settings_dialog(self)
+        load_settings = load_settings_dialog(self)
 
         with dpg.window(label="Primary Window", width=1080, height=720) as main_window:
             self.window = main_window
@@ -157,25 +122,33 @@ class UI:
                         label="Load Spin Matrix",
                         callback=load_dialog_callback,
                         check=False,
-                        user_data=(self, load_file_dialog, "spin"),
+                        user_data=(self, load_file, "spin"),
                     )
                     dpg.add_menu_item(
                         label="Load NMR File",
                         callback=load_dialog_callback,
                         check=False,
-                        user_data=(self, load_nmr_dialog, "nmr"),
+                        user_data=(self, load_nmr, "nmr"),
+                    )
+                    dpg.add_menu_item(
+                        label="Save Optimization",
+                        callback=save_dialog_callback,
+                        check=False,
+                        user_data=(self, save_opt, "optimization"),
+                        enabled=False,
+                        tag="opt_save",
                     )
                 dpg.add_menu_item(label="Help", callback=test_callback)
 
                 with dpg.menu(label="Settings"):
                     dpg.add_menu_item(
                         label="Save Settings",
-                        callback=lambda: dpg.show_item(save_settings_dialog),
+                        callback=lambda: dpg.show_item(save_settings),
                         check=False,
                     )
                     dpg.add_menu_item(
                         label="Load Settings",
-                        callback=lambda: dpg.show_item(load_settings_dialog),
+                        callback=lambda: dpg.show_item(load_settings),
                         check=False,
                     )
 
@@ -241,7 +214,7 @@ class UI:
         -----
         Do not include `decorated` keyword argument, as it is included in functon
         """
-        from main import DPGStatus
+        from solventspinsim.main import DPGStatus
 
         dpg.create_context()
         DPGStatus.set_context_status(True)

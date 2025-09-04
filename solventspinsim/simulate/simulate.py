@@ -1,8 +1,14 @@
 import numpy as np
-from simulate.types import PeakList, PeakArray
 
-def simulate_peaklist(peaklist : PeakList, points : int = 800, half_height_width : list[float | int] | float | int = 1,
-                      freq_limits : tuple[float,float] | None = None) -> PeakArray:
+from solventspinsim.simulate.types import PeakArray, PeakList
+
+
+def simulate_peaklist(
+    peaklist: PeakList,
+    points: int = 800,
+    half_height_width: list[float | int] | float | int = 1,
+    freq_limits: tuple[float, float] | None = None,
+) -> PeakArray:
     """
     Simulate the NMR spectrum represented by the peaklist
 
@@ -28,22 +34,31 @@ def simulate_peaklist(peaklist : PeakList, points : int = 800, half_height_width
     """
     peaklist.sort()
     if freq_limits:
-        if isinstance(freq_limits, tuple) and len(freq_limits) == 2 and all(isinstance(x, (int, float)) for x in freq_limits):
+        if (
+            isinstance(freq_limits, tuple)
+            and len(freq_limits) == 2
+            and all(isinstance(x, (int, float)) for x in freq_limits)
+        ):
             l_limit, r_limit = min(freq_limits), max(freq_limits)
         else:
-            raise ValueError("freq_limits must be a tuple of two numbers (int or float)")
+            raise ValueError(
+                "freq_limits must be a tuple of two numbers (int or float)"
+            )
     else:
         l_limit = peaklist[0][0] - 50
         r_limit = peaklist[-1][0] + 50
 
     # Define frequency axis
-    x : PeakArray = np.linspace(l_limit, r_limit, points)
+    x: PeakArray = np.linspace(l_limit, r_limit, points)
     # Generate intensity axis from peaklist
-    y : PeakArray = simulate_lorentzians(x, peaklist, half_height_width)
+    y: PeakArray = simulate_lorentzians(x, peaklist, half_height_width)
 
     return np.vstack((x, y))
 
-def simulate_lorentzians(x : PeakArray, peaklist : PeakList, half_height_width : list[float | int] | float | int) -> np.ndarray:
+
+def simulate_lorentzians(
+    x: PeakArray, peaklist: PeakList, half_height_width: list[float | int] | float | int
+) -> np.ndarray:
     """Simulates the y axis of a peak aray using the x axis, peak frequency and intensities, and half_height_width value.
 
     Parameters
@@ -74,7 +89,8 @@ def simulate_lorentzians(x : PeakArray, peaklist : PeakList, half_height_width :
         y += lorentz(x, center, intensity, hhw)
     return y
 
-def lorentz(freq : PeakArray, center : float, intensity : float, hhw : float) -> PeakArray:
+
+def lorentz(freq: PeakArray, center: float, intensity: float, hhw: float) -> PeakArray:
     """
     Calculates a lorentzian value with given parameters
 
@@ -99,8 +115,12 @@ def lorentz(freq : PeakArray, center : float, intensity : float, hhw : float) ->
         Adapted from nmrsim's math.py
     """
     if hhw == 0.0:
-        hhw= 1e-6
+        hhw = 1e-6
 
     # Scaling factor lowers peak intensities and broadens values
     scaling_factor = 0.5 / hhw
-    return scaling_factor * intensity *  ((0.5 * hhw) ** 2 / ((0.5 * hhw) ** 2 + (freq - center) ** 2))
+    return (
+        scaling_factor
+        * intensity
+        * ((0.5 * hhw) ** 2 / ((0.5 * hhw) ** 2 + (freq - center) ** 2))
+    )

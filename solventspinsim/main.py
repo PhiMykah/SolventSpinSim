@@ -1,10 +1,11 @@
 from sys import argv
 
 from dearpygui.dearpygui import destroy_context
-from parse import parse_args
-from settings import Settings
-from commandline import CommandLine
-from ui import UI
+
+from solventspinsim.commandline import CommandLine
+from solventspinsim.parse import parse_args
+from solventspinsim.settings import Settings
+from solventspinsim.ui import UI
 
 
 class DPGStatus:
@@ -28,7 +29,7 @@ class DPGStatus:
         return DPGStatus._viewport_enabled
 
 
-def main(argv: list[str]) -> None:
+def main(arg: list[str] = argv[1:]) -> None:
     """
     Main entry point of SolventSpinSim (3S) function
 
@@ -37,7 +38,7 @@ def main(argv: list[str]) -> None:
     argv : list[str]
         command-line arguments from system (exclude file_name as parameter)
     """
-    settings = Settings(parse_args(argv))
+    settings = Settings(parse_args(arg))
     if settings["ui_disabled"]:
         cl = CommandLine(settings)
         cl.run()

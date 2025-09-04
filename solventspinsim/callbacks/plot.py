@@ -3,15 +3,15 @@ from typing import TYPE_CHECKING, Literal
 
 import dearpygui.dearpygui as dpg
 import numpy as np
-from ui.components import Button
-from ui.themes import Theme
+from solventspinsim.ui.components import Button
+from solventspinsim.ui.themes import Theme
 
 if TYPE_CHECKING:
     from typing import Any
 
-    from simulate import Water
-    from spin import Spin
-    from ui import UI
+    from solventspinsim.simulate import Water
+    from solventspinsim.spin import Spin
+    from solventspinsim.ui import UI
 
 COUPLING_DRAG_HEIGHT = -0.01
 
@@ -400,7 +400,7 @@ def update_simulation_plot(
     hhw: list[float | int] | float | int,
     peak_count: int,
 ) -> None:
-    from simulate import simulate_peaklist
+    from solventspinsim.simulate import simulate_peaklist
 
     """
     Simulates the spectrum and updates the plot for the given UI object.    
@@ -410,7 +410,7 @@ def update_simulation_plot(
 
     simulation = simulate_peaklist(spin.peaklist(), points, hhw)
     if water.water_enable:
-        from graphics import WaterSettings
+        from solventspinsim.graphics import WaterSettings
 
         l_limit: float = simulation[0][0]
         r_limit: float = simulation[0][-1]

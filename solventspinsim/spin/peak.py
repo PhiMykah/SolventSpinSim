@@ -3,7 +3,8 @@ from typing import Generator, Literal
 
 import numpy as np
 from numpy.typing import ArrayLike
-from spin.types import Peak, PeakList
+
+from solventspinsim.spin.types import Peak, PeakList
 
 # ---------------------------------------------------------------------------- #
 #                              Generate Couplings                              #

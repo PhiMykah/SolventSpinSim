@@ -1,5 +1,5 @@
 import dearpygui.dearpygui as dpg
-from ui.themes import Theme
+from solventspinsim.ui.themes import Theme
 
 
 class Button:

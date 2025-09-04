@@ -1,12 +1,13 @@
 from typing import TYPE_CHECKING
 
 import dearpygui.dearpygui as dpg
-from callbacks import set_water_range_callback
+
+from solventspinsim.callbacks import set_water_range_callback
 
 from .graphics import Graphic
 
 if TYPE_CHECKING:
-    from ui import UI
+    from solventspinsim.ui import UI
 
 
 class PlotWindow(Graphic):

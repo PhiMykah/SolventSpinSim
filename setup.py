@@ -16,5 +16,5 @@ setup(
     },
     author="Micah Smith",
     author_email="mykahsmith21@gmail.com",
-    description="",
+    description="Optimization takes less time than listening to \"Back and Forth\" by Cameo",
 )

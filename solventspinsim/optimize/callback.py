@@ -2,17 +2,18 @@ from sys import stderr
 from typing import TYPE_CHECKING
 
 import dearpygui.dearpygui as dpg
-from callbacks import (
+
+from solventspinsim.callbacks import (
     update_plotting_ui,
     update_simulation_plot,
     zoom_subplots_to_peaks,
 )
-from spin import Spin, loadSpinFromFile
+from solventspinsim.spin import Spin, loadSpinFromFile
 
 from .optimize import optimize_simulation
 
 if TYPE_CHECKING:
-    from ui import UI
+    from solventspinsim.ui import UI
 
 
 def optimize_callback(sender, app_data, user_data: "UI"):
@@ -83,3 +84,5 @@ def optimize_callback(sender, app_data, user_data: "UI"):
     )
     update_plotting_ui(user_data)
     zoom_subplots_to_peaks(user_data)
+
+    dpg.enable_item("opt_save")

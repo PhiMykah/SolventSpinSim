@@ -2,8 +2,12 @@ from sys import stderr
 from typing import TYPE_CHECKING
 
 import dearpygui.dearpygui as dpg
+from nmrPype import DataFrame, write_to_file
 from numpy import argmax
-from spin import Spin, loadSpinFromFile
+from numpy import array as nparray
+
+from solventspinsim.settings import load_settings_callback, save_settings_callback
+from solventspinsim.spin import Spin, loadSpinFromFile
 
 from .callbacks import set_water_range_callback
 from .nmr import load_nmr_array
@@ -17,8 +21,82 @@ from .plot import (
 )
 
 if TYPE_CHECKING:
-    from ui import UI
-    from ui.components import Button
+    from solventspinsim.ui import UI
+    from solventspinsim.ui.components import Button
+
+
+def spin_file_dialog(ui: "UI"):
+    with dpg.file_dialog(
+        directory_selector=False,
+        show=False,
+        callback=set_spin_file,
+        width=800,
+        height=400,
+        user_data=ui,
+    ) as load_file_dialog:
+        dpg.add_file_extension("", color=(150, 255, 150, 255))
+        dpg.add_file_extension(
+            "Text Files (*.txt *.csv){.txt,.csv}", color=(0, 255, 255, 255)
+        )
+    return load_file_dialog
+
+
+def nmr_file_dialog(ui: "UI"):
+    with dpg.file_dialog(
+        directory_selector=False,
+        show=False,
+        callback=set_nmr_file_callback,
+        width=800,
+        height=400,
+        user_data=ui,
+    ) as load_nmr_dialog:
+        dpg.add_file_extension("", color=(150, 255, 150, 255))
+        dpg.add_file_extension("FT1 Files (*.ft1){.ft1,}", color=(0, 255, 255, 255))
+    return load_nmr_dialog
+
+
+def load_settings_dialog(ui: "UI"):
+    with dpg.file_dialog(
+        directory_selector=False,
+        show=False,
+        callback=load_settings_callback,
+        width=800,
+        height=400,
+        user_data=(ui.settings, ui),
+    ) as settings_dialog:
+        dpg.add_file_extension("", color=(150, 255, 150, 255))
+        dpg.add_file_extension(
+            "Settings Files (*.json){.json,}", color=(0, 255, 255, 255)
+        )
+    return settings_dialog
+
+
+def save_settings_dialog(ui: "UI"):
+    with dpg.file_dialog(
+        directory_selector=False,
+        show=False,
+        callback=save_settings_callback,
+        width=800,
+        height=400,
+        default_filename="settings.",
+        user_data=(ui.settings, ui),
+    ) as settings_dialog:
+        dpg.add_file_extension("JSON Files (*.json){.json,}", color=(0, 255, 255, 255))
+    return settings_dialog
+
+
+def save_optimization_dialog(ui: "UI"):
+    with dpg.file_dialog(
+        directory_selector=False,
+        show=False,
+        callback=_save_optimization_to_nmr,
+        width=800,
+        height=400,
+        default_filename="output",
+        user_data=ui,
+    ) as optimization_dialog:
+        dpg.add_file_extension("FT1 Files (*.ft1){.ft1,}", color=(0, 255, 255, 255))
+    return optimization_dialog
 
 
 def load_dialog_callback(
@@ -37,6 +115,24 @@ def load_dialog_callback(
             dpg.show_item(dialog)
         else:
             _load_spin(sender, app_data, ui)
+
+
+def save_dialog_callback(
+    sender, app_data, user_data: "tuple[UI, int | str, str]"
+) -> None:
+    ui: UI = user_data[0]
+    dialog: int | str = user_data[1]
+    dialog_type: str = user_data[2]
+    if dialog_type == "optimization":
+        if not ui.output_file:
+            dpg.show_item(dialog)
+        else:
+            _save_optimization_to_nmr(sender, ui.output_file, ui)
+    else:
+        if not ui.output_file:
+            dpg.show_item(dialog)
+        else:
+            _save_optimization_to_nmr(sender, ui.output_file, ui)
 
 
 def set_spin_file(sender, app_data: dict, user_data: "UI") -> None:
@@ -124,3 +220,40 @@ def _load_nmr(sender, app_data, ui: "UI"):
 def load_settings_file(sender, app_data, user_data) -> None:
     file = app_data["file_path_name"]
     dpg.configure_app(init_file=file)
+
+
+def _save_optimization_to_nmr(sender, app_data, ui: "UI") -> None:
+    from solventspinsim.simulate import simulate_peaklist
+
+    if isinstance(app_data, dict):
+        user_file = app_data["file_path_name"]
+    elif isinstance(app_data, str):
+        user_file = app_data
+    else:
+        return
+
+    df = DataFrame(ui.settings["nmr_file"])
+
+    spin_simulation = simulate_peaklist(
+        ui.spin.peaklist(), ui.points, ui.spin.half_height_width
+    )
+
+    water = ui.water_sim
+    if water.water_enable:
+        l_limit: float = spin_simulation[0][0]
+        r_limit: float = spin_simulation[0][-1]
+
+        water_simulation = simulate_peaklist(
+            water.peaklist, ui.points, water.hhw, (l_limit, r_limit)
+        )
+
+        simulation = [spin_simulation[0], spin_simulation[1] + water_simulation[1]]
+    else:
+        simulation = [spin_simulation[0], spin_simulation[1]]
+
+    result_array = nparray(simulation[1][::-1], dtype="float32")
+    df.setArray(result_array)
+
+    output_file: str = user_file if user_file else "output.ft1"
+
+    write_to_file(df, output_file, True)

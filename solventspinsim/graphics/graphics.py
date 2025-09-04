@@ -3,10 +3,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import dearpygui.dearpygui as dpg
-from ui.themes import Theme
+
+from solventspinsim.ui.themes import Theme
 
 if TYPE_CHECKING:
-    from ui import UI
+    from solventspinsim.ui import UI
 
 
 def load_static_texture(file: str, texture_tag: int | str = 0) -> int | str:
@@ -44,7 +45,7 @@ class Graphic:
         pass
 
     def update_ui_values(self) -> None:
-        from main import DPGStatus
+        from solventspinsim.main import DPGStatus
 
         if DPGStatus.is_context_enabled():
             for key in self.params.keys():

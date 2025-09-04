@@ -4,17 +4,18 @@ from typing import TYPE_CHECKING
 import dearpygui.dearpygui as dpg
 import nmrPype
 import numpy as np
-
 from scipy.optimize import minimize
-from simulate import simulate_peaklist
-from spin import Spin
-from ui.themes import Theme
+
+from solventspinsim.simulate import simulate_peaklist
+from solventspinsim.spin import Spin
+from solventspinsim.ui.themes import Theme
 
 from .display import _optimization_ui, _update_optimization_ui
 from .helper import unpack_params, unpack_params_water
 
 if TYPE_CHECKING:
-    from simulate import Water
+    from solventspinsim.simulate import Water
+
 
 def section_optimization(
     nmr_array: np.ndarray,
@@ -25,8 +26,8 @@ def section_optimization(
     water_range: tuple[float, float],
     simulate_water: bool = False,
 ) -> np.ndarray:
-    from main import DPGStatus
-    from simulate import Water
+    from solventspinsim.main import DPGStatus
+    from solventspinsim.simulate import Water
 
     if DPGStatus.is_context_enabled():
         _optimization_ui(spin)
@@ -295,7 +296,7 @@ def optimize_simulation(
     water_range: tuple[float, float],
     water: "Water | None" = None,
 ) -> "Spin | tuple[Spin, Water]":
-    from simulate import Water
+    from solventspinsim.simulate import Water
 
     df = nmrPype.DataFrame(nmr_file)
 

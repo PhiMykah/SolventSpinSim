@@ -12,7 +12,7 @@ from .plot import (
 if TYPE_CHECKING:
     from typing import Literal
 
-    from ui import UI
+    from solventspinsim.ui import UI
 
 # ---------------------------------------------------------------------------- #
 #                              Callback Functions                              #

@@ -1,7 +1,8 @@
 from typing import TYPE_CHECKING
 
 import dearpygui.dearpygui as dpg
-from callbacks import (
+
+from solventspinsim.callbacks import (
     help_msg,
     set_field_strength_callback,
     set_hhw_callback,
@@ -12,7 +13,7 @@ from callbacks import (
 from .graphics import Graphic
 
 if TYPE_CHECKING:
-    from ui import UI
+    from solventspinsim.ui import UI
 
 
 class SimulationSettings(Graphic):

@@ -3,8 +3,9 @@ from sys import stderr
 
 import numpy as np
 from numpy.typing import ArrayLike
-from spin.peak import gen_peaklist_weak
-from spin.types import PeakList
+
+from solventspinsim.spin.peak import gen_peaklist_weak
+from solventspinsim.spin.types import PeakList
 
 
 class CouplingStrength(Enum):

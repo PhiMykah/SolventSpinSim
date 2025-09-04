@@ -3,10 +3,10 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from parse import SettingsArguments
+from solventspinsim.parse import SettingsArguments
 
 if TYPE_CHECKING:
-    from ui import UI
+    from solventspinsim.ui import UI
 
 DEFAULT_JSON_PATH = Path(__file__).parent / "default.json"
 SCHEMA_PATH = Path(__file__).parent / "schema.json"
@@ -93,7 +93,11 @@ class Settings:
             json.dump(self.values, f, indent=2, separators=(",", ": "))
 
     def update_settings(self, ui: "UI") -> None:
-        from graphics import OptimizationSettings, PlotWindow, SimulationSettings
+        from solventspinsim.graphics import (
+            OptimizationSettings,
+            PlotWindow,
+            SimulationSettings,
+        )
 
         self.values["$schema"] = f"file:///{str(SCHEMA_PATH).replace('\\', '/')}"
         # Files
@@ -154,9 +158,13 @@ class Settings:
         self.values["water_sim"] = water_sim
 
     def update_ui(self, ui: "UI") -> None:
-        from graphics import OptimizationSettings, PlotWindow, SimulationSettings
-        from simulate import Water
-        from spin import Spin
+        from solventspinsim.graphics import (
+            OptimizationSettings,
+            PlotWindow,
+            SimulationSettings,
+        )
+        from solventspinsim.simulate import Water
+        from solventspinsim.spin import Spin
 
         # Files
         ui.title = self.values.get("title", "SolventSpinSim")

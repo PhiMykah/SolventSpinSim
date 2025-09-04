@@ -1,7 +1,8 @@
 import dearpygui.dearpygui as dpg
-from callbacks import show_item_callback
-from spin import Spin
-from ui.themes import Theme
+
+from solventspinsim.callbacks import show_item_callback
+from solventspinsim.spin import Spin
+from solventspinsim.ui.themes import Theme
 
 
 def _optimization_ui(spin: Spin):
@@ -146,3 +147,5 @@ def _update_optimization_ui(
         dpg.bind_item_theme("real_opt_series", Theme.nmr_plot_theme())
     else:
         dpg.set_value("real_opt_series", [real_x, real_y])
+
+    dpg.fit_axis_data("opt_x_axis")
