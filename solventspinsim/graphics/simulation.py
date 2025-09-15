@@ -87,6 +87,7 @@ class SimulationSettings(Graphic):
                     tag=field_strength,
                     callback=set_field_strength_callback,
                     user_data=self.ui,
+                    enabled=False,
                 )
                 self.field_strength.set_help_msg(
                     "Field Strength in Hz of the magnet to simulate."

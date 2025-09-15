@@ -1,6 +1,7 @@
 import dearpygui.dearpygui as dpg
 
 from .types import ThemeDict
+from .styles import button_style
 
 
 def main_theme_components(theme: ThemeDict) -> None:
@@ -229,6 +230,12 @@ def main_theme_components(theme: ThemeDict) -> None:
             theme["PRIMARY_CONTENT"],
         )
 
+    with dpg.theme_component(dpg.mvButton):
+        button_style()
+
+    with dpg.theme_component(dpg.mvInputFloat):
+        button_style()
+        
     # ------------------------------------ Tab ----------------------------------- #
     """
     Modify the tab container components
@@ -412,5 +419,12 @@ def main_theme_components(theme: ThemeDict) -> None:
         dpg.add_theme_color(  # Histogram Plot Hovered Color
             dpg.mvThemeCol_PlotHistogramHovered,
             theme["ACCENT"],
+            category=dpg.mvThemeCat_Core,
+        )
+
+    with dpg.theme_component(dpg.mvPlot):
+        dpg.add_theme_color(  # Plot's Background Color
+            dpg.mvThemeCol_WindowBg,
+            theme["BASE100"],
             category=dpg.mvThemeCat_Core,
         )

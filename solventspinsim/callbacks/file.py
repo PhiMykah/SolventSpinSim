@@ -232,17 +232,25 @@ def _save_optimization_to_nmr(sender, app_data, ui: "UI") -> None:
     else:
         return
 
-    df = DataFrame(ui.settings["nmr_file"])
+    ui.settings.update_settings(ui)
+
+    nmr_file = ui.settings["nmr_file"]
+    field_strength = ui.settings["sim_settings"]["field_strength"]
+    df = DataFrame(nmr_file)
+
+    nmr_array = load_nmr_array(nmr_file, field_strength)
+    l_limit: float = nmr_array[0][-1]
+    r_limit: float = nmr_array[0][0]
 
     spin_simulation = simulate_peaklist(
-        ui.spin.peaklist(), ui.points, ui.spin.half_height_width
+        ui.spin.peaklist(),
+        ui.points,
+        ui.spin.half_height_width,
+        (l_limit, r_limit),
     )
 
     water = ui.water_sim
     if water.water_enable:
-        l_limit: float = spin_simulation[0][0]
-        r_limit: float = spin_simulation[0][-1]
-
         water_simulation = simulate_peaklist(
             water.peaklist, ui.points, water.hhw, (l_limit, r_limit)
         )

@@ -4,6 +4,7 @@ from numpy import array as nparray
 from solventspinsim.settings import Settings
 from solventspinsim.simulate.water import Water
 from solventspinsim.spin import Spin, loadSpinFromFile
+from solventspinsim.callbacks.nmr import load_nmr_array
 
 
 class CommandLine:
@@ -25,15 +26,21 @@ class CommandLine:
             optimized_water = optimizations[1]
 
         points: int = self.settings["sim_settings"]["points"]
+        field_strength: float = self.settings["sim_settings"]["field_strength"]
+        nmr_file: str = self.settings["nmr_file"]
+
+        nmr_array = load_nmr_array(nmr_file, field_strength)
+        l_limit: float = nmr_array[0][-1]
+        r_limit: float = nmr_array[0][0]
 
         simulation = simulate_peaklist(
-            optimized_spin.peaklist(), points, optimized_spin.half_height_width
+            optimized_spin.peaklist(),
+            points,
+            optimized_spin.half_height_width,
+            (l_limit, r_limit),
         )
 
         if self.water.water_enable:
-            l_limit: float = simulation[0][0]
-            r_limit: float = simulation[0][-1]
-
             water_simulation = simulate_peaklist(
                 optimized_water.peaklist,
                 points,
