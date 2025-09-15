@@ -8,7 +8,7 @@ from scipy.optimize import minimize
 
 from solventspinsim.simulate import simulate_peaklist
 from solventspinsim.spin import Spin
-from solventspinsim.ui.themes import Theme
+from solventspinsim.themes import Theme
 
 from .display import _optimization_ui, _update_optimization_ui
 from .helper import unpack_params, unpack_params_water
@@ -101,8 +101,8 @@ def section_optimization(
                     parent="main_x_axis",
                     tag="region_line_right",
                 )
-                dpg.bind_item_theme("region_line_left", Theme.region_theme())
-                dpg.bind_item_theme("region_line_right", Theme.region_theme())
+                dpg.bind_item_theme("region_line_left", Theme.region_plot_theme())
+                dpg.bind_item_theme("region_line_right", Theme.region_plot_theme())
 
         full_x = nmr_array[0]
 

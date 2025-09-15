@@ -3,12 +3,12 @@ from typing import TYPE_CHECKING
 import dearpygui.dearpygui as dpg
 
 from solventspinsim.callbacks import (
-    help_msg,
     set_field_strength_callback,
     set_hhw_callback,
     set_intensity_callback,
     set_points_callback,
 )
+from solventspinsim.components import InputFloat, DragFloat, InputInt, Checkbox
 
 from .graphics import Graphic
 
@@ -78,7 +78,7 @@ class SimulationSettings(Graphic):
             dpg.add_table_column(width=100)
 
             with dpg.table_row():
-                dpg.add_input_float(
+                self.field_strength = InputFloat(
                     label="Field Strength",
                     source=f"{field_strength}_value",
                     format="%.02f",
@@ -88,9 +88,11 @@ class SimulationSettings(Graphic):
                     callback=set_field_strength_callback,
                     user_data=self.ui,
                 )
-                help_msg("Field Strength in Hz of the magnet to simulate.")
+                self.field_strength.set_help_msg(
+                    "Field Strength in Hz of the magnet to simulate."
+                )
 
-                dpg.add_input_int(
+                self.points_ui = InputInt(
                     label="Points",
                     source=f"{points}_value",
                     step=1,
@@ -99,10 +101,12 @@ class SimulationSettings(Graphic):
                     callback=set_points_callback,
                     user_data=self.ui,
                 )
-                help_msg("Number of points in entire spectrum to simulate.")
+                self.points_ui.set_help_msg(
+                    "Number of points in entire spectrum to simulate."
+                )
 
             with dpg.table_row():
-                dpg.add_input_float(
+                self.intensity = InputFloat(
                     label="Intensity",
                     source=f"{intensity}_value",
                     format="%.02f",
@@ -112,9 +116,9 @@ class SimulationSettings(Graphic):
                     callback=set_intensity_callback,
                     user_data=self.ui,
                 )
-                help_msg("Maximum starting intensity for each peak.")
+                self.intensity.set_help_msg("Maximum starting intensity for each peak.")
 
-                dpg.add_drag_float(
+                self.hhw = DragFloat(
                     label="Half-Height Width",
                     source=f"{half_height_width}_value",
                     format="%.02f",
@@ -123,10 +127,10 @@ class SimulationSettings(Graphic):
                     callback=set_hhw_callback,
                     user_data=self.ui,
                 )
-                help_msg("Width of the peak lorentzian at half-height.")
+                self.hhw.set_help_msg("Width of the peak lorentzian at half-height.")
 
             with dpg.table_row():
-                dpg.add_checkbox(
+                chk = Checkbox(
                     label="Optimize with Current Settings",
                     tag=use_settings,
                     source=f"{use_settings}_value",
@@ -136,7 +140,7 @@ class SimulationSettings(Graphic):
                     user_data=self.ui,
                     default_value=self.params[use_settings],
                 )
-                help_msg(
+                chk.set_help_msg(
                     "Utilize current simulation settings as initial parameters for optimization"
                 )
 

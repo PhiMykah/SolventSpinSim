@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING, Literal
 
 import dearpygui.dearpygui as dpg
 import numpy as np
-from solventspinsim.ui.components import Button
-from solventspinsim.ui.themes import Theme
+from solventspinsim.components import Button
+from solventspinsim.themes import Theme
 
 if TYPE_CHECKING:
     from typing import Any

@@ -22,7 +22,7 @@ from .plot import (
 
 if TYPE_CHECKING:
     from solventspinsim.ui import UI
-    from solventspinsim.ui.components import Button
+    from solventspinsim.components import Button
 
 
 def spin_file_dialog(ui: "UI"):

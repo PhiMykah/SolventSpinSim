@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import dearpygui.dearpygui as dpg
+
 from solventspinsim.callbacks import (
     fit_axes,
     load_dialog_callback,
@@ -22,9 +23,10 @@ from solventspinsim.graphics import (
 from solventspinsim.settings import Settings
 from solventspinsim.simulate import Water
 from solventspinsim.spin import Spin
+from solventspinsim.themes import Theme, change_theme_callback
 
-from .components import Button
-from .themes import Theme, change_theme_callback
+from solventspinsim.components import Button
+
 
 ASSETS_DIR = (
     Path(__file__).parent.parent / "assets"
@@ -98,13 +100,13 @@ class UI:
 
         Assumes dearpygui's context has been created
         """
-        Theme.main_themes()
+        Theme.global_theme()
         Theme.disabled_theme()
         Theme.sim_plot_theme()
         Theme.nmr_plot_theme()
-        Theme.region_theme()
+        Theme.region_plot_theme()
 
-        dpg.bind_theme(Theme.main_themes("dark"))
+        dpg.bind_theme(Theme.global_theme("dark"))
 
         self.water_sim = Water()
 
@@ -223,6 +225,7 @@ class UI:
         DPGStatus.set_viewport_status(True)
 
         dpg.setup_dearpygui()
+        Theme.handlers()
 
         self.main_window()
 

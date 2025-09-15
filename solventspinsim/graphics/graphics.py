@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import dearpygui.dearpygui as dpg
 
-from solventspinsim.ui.themes import Theme
+from solventspinsim.themes import Theme
 
 if TYPE_CHECKING:
     from solventspinsim.ui import UI

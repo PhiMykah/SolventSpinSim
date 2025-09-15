@@ -2,7 +2,7 @@ import dearpygui.dearpygui as dpg
 
 from solventspinsim.callbacks import show_item_callback
 from solventspinsim.spin import Spin
-from solventspinsim.ui.themes import Theme
+from solventspinsim.themes import Theme
 
 
 def _optimization_ui(spin: Spin):

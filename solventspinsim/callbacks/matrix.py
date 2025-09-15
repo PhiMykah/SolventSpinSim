@@ -3,7 +3,8 @@ from typing import TYPE_CHECKING
 import dearpygui.dearpygui as dpg
 import numpy as np
 
-from .callbacks import help_msg
+from solventspinsim.components import DragFloat, Text, Button
+
 from .plot import (
     COUPLING_DRAG_HEIGHT,
     update_plotting_ui,
@@ -24,30 +25,30 @@ def matrix_table(ui: "UI") -> None:
             dpg.add_table_column(width=100)
 
             with dpg.table_row():
-                dpg.add_text("Minimum Frequency")
-                help_msg(
+                min_freq = Text("Minimum Frequency")
+                min_freq.set_help_msg(
                     "Minimum frequency for the coupling matrix and chemical shift sliders."
                 )
 
-                dpg.add_text("Maximum Frequency")
-                help_msg(
+                max_freq = Text("Maximum Frequency")
+                max_freq.set_help_msg(
                     "Maximum frequency for the coupling matrix and chemical shift sliders."
                 )
 
             with dpg.table_row():
-                dpg.add_drag_float(
+                DragFloat(
                     label="##Minimum Frequency",
                     tag="table_min_freq",
                     default_value=-100.0,
                     width=-1,
                 )
-                dpg.add_drag_float(
+                DragFloat(
                     label="##Maximum Frequency",
                     tag="table_max_freq",
                     default_value=100.0,
                     width=-1,
                 )
-                dpg.add_button(label="Update Matrix", callback=load_table, user_data=ui)
+                Button(label="Update Matrix", callback=load_table, user_data=ui)
 
 
 def load_table(sender, app_data, user_data: "UI") -> None:

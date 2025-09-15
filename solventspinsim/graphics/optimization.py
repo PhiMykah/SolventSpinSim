@@ -2,10 +2,10 @@ from typing import TYPE_CHECKING
 
 import dearpygui.dearpygui as dpg
 
-from solventspinsim.callbacks import help_msg, set_water_range_callback
+from solventspinsim.callbacks import set_water_range_callback
 from solventspinsim.graphics import Graphic
 from solventspinsim.optimize import optimize_callback
-from solventspinsim.ui.components import Button
+from solventspinsim.components import Button, DragFloat
 
 if TYPE_CHECKING:
     from solventspinsim.ui import UI
@@ -51,7 +51,7 @@ class OptimizationSettings(Graphic):
             dpg.add_table_column(width=100)
 
             with dpg.table_row():
-                dpg.add_drag_float(
+                self.water_left = DragFloat(
                     label="Water Left Limit",
                     format="%.02f",
                     source=f"{water_left}_value",
@@ -59,9 +59,9 @@ class OptimizationSettings(Graphic):
                     callback=set_water_range_callback,
                     user_data=(self.ui, "left"),
                 )
-                help_msg("Leftmost region of the water signal peak")
+                self.water_left.set_help_msg("Leftmost region of the water signal peak")
 
-                dpg.add_drag_float(
+                self.water_right = DragFloat(
                     label="Water Right Limit",
                     format="%.02f",
                     source=f"{water_right}_value",
@@ -69,7 +69,9 @@ class OptimizationSettings(Graphic):
                     callback=set_water_range_callback,
                     user_data=(self.ui, "right"),
                 )
-                help_msg("Rightmost region of the water signal peak")
+                self.water_right.set_help_msg(
+                    "Rightmost region of the water signal peak"
+                )
 
         self.ui.buttons["optimize"] = Button(
             label="Optimize",
