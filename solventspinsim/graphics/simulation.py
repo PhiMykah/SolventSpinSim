@@ -92,6 +92,7 @@ class SimulationSettings(Graphic):
                 self.field_strength.set_help_msg(
                     "Field Strength in Hz of the magnet to simulate."
                 )
+                self.components["field_strength"] = self.field_strength
 
                 self.points_ui = InputInt(
                     label="Points",
@@ -105,6 +106,7 @@ class SimulationSettings(Graphic):
                 self.points_ui.set_help_msg(
                     "Number of points in entire spectrum to simulate."
                 )
+                self.components["points"] = self.points_ui
 
             with dpg.table_row():
                 self.intensity = InputFloat(
@@ -116,8 +118,10 @@ class SimulationSettings(Graphic):
                     tag=intensity,
                     callback=set_intensity_callback,
                     user_data=self.ui,
+                    enabled=False,
                 )
                 self.intensity.set_help_msg("Maximum starting intensity for each peak.")
+                self.components["intensity"] = self.intensity
 
                 self.hhw = DragFloat(
                     label="Half-Height Width",
@@ -129,9 +133,9 @@ class SimulationSettings(Graphic):
                     user_data=self.ui,
                 )
                 self.hhw.set_help_msg("Width of the peak lorentzian at half-height.")
-
+                self.components["hhw"] = self.hhw
             with dpg.table_row():
-                chk = Checkbox(
+                self.optimize_checkbox = Checkbox(
                     label="Optimize with Current Settings",
                     tag=use_settings,
                     source=f"{use_settings}_value",
@@ -141,9 +145,10 @@ class SimulationSettings(Graphic):
                     user_data=self.ui,
                     default_value=self.params[use_settings],
                 )
-                chk.set_help_msg(
+                self.optimize_checkbox.set_help_msg(
                     "Utilize current simulation settings as initial parameters for optimization"
                 )
+                self.components["optimize_checkbox"] = self.optimize_checkbox
 
         if self.is_enabled:
             self.enable()

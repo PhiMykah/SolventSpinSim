@@ -37,7 +37,7 @@ def optimize_callback(sender, app_data, user_data: "UI"):
     else:
         raise ValueError("Water range is invalid. Water range must be two values!")
 
-    init_hhw: list[float | int] = user_data.spin.half_height_width
+    init_hhw: list[float | int] = user_data.current_spin.half_height_width
 
     if dpg.does_item_exist("water_drag_left"):
         dpg.hide_item("water_drag_left")
@@ -47,7 +47,7 @@ def optimize_callback(sender, app_data, user_data: "UI"):
         dpg.hide_item("water_drag_right")
 
     if user_data.sim_settings["use_settings"]:
-        initial_spin = user_data.spin
+        initial_spin = user_data.current_spin
     else:
         spin_names, nuclei_frequencies, couplings = loadSpinFromFile(spin_matrix_file)
         initial_spin = Spin(

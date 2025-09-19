@@ -60,6 +60,7 @@ class OptimizationSettings(Graphic):
                     user_data=(self.ui, "left"),
                 )
                 self.water_left.set_help_msg("Leftmost region of the water signal peak")
+                self.components["water_left"] = self.water_left
 
                 self.water_right = DragFloat(
                     label="Water Right Limit",
@@ -72,6 +73,7 @@ class OptimizationSettings(Graphic):
                 self.water_right.set_help_msg(
                     "Rightmost region of the water signal peak"
                 )
+                self.components["water_right"] = self.water_right
 
         self.ui.buttons["optimize"] = Button(
             label="Optimize",
@@ -80,3 +82,9 @@ class OptimizationSettings(Graphic):
             enabled=False,
             parent=self.parent,
         )
+
+        if self.is_enabled:
+            self.enable()
+        else:
+            self.disable()
+        self.is_rendered = True

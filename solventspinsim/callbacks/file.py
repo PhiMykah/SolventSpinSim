@@ -92,7 +92,7 @@ def save_optimization_dialog(ui: "UI"):
         callback=_save_optimization_to_nmr,
         width=800,
         height=400,
-        default_filename="output",
+        default_filename="",
         user_data=ui,
     ) as optimization_dialog:
         dpg.add_file_extension("FT1 Files (*.ft1){.ft1,}", color=(0, 255, 255, 255))
@@ -100,18 +100,23 @@ def save_optimization_dialog(ui: "UI"):
 
 
 def load_dialog_callback(
-    sender, app_data, user_data: "tuple[UI, int | str, str]"
+    sender, app_data, user_data: "tuple[UI, int | str, str, bool]"
 ) -> None:
     ui: UI = user_data[0]
     dialog: int | str = user_data[1]
     dialog_type: str = user_data[2]
+    try:
+        add_spin: bool = user_data[3]
+    except IndexError:
+        add_spin: bool = False
+
     if dialog_type == "nmr":
-        if not ui.nmr_file:
+        if not ui.nmr_file or add_spin:
             dpg.show_item(dialog)
         else:
             _load_nmr(sender, app_data, ui)
     else:
-        if not ui.spin_file:
+        if not ui.spin_file or add_spin:
             dpg.show_item(dialog)
         else:
             _load_spin(sender, app_data, ui)
@@ -154,9 +159,16 @@ def set_spin_file(sender, app_data: dict, user_data: "UI") -> None:
 
 
 def _load_spin(sender, app_data, ui: "UI"):
-    spin_names, nuclei_frequencies, couplings = loadSpinFromFile(ui.spin_file)
-    spin = Spin(spin_names, nuclei_frequencies, couplings)
-    ui.spin = spin
+    if ui.spin_file in ui.spins.keys():
+        ui.current_spin = ui.spins[ui.spin_file]
+    else:
+        spin_names, nuclei_frequencies, couplings = loadSpinFromFile(ui.spin_file)
+        spin = Spin(spin_names, nuclei_frequencies, couplings)
+        ui.current_spin = spin
+        ui.spins[ui.spin_file] = spin
+
+    if not dpg.is_item_enabled("add_spin"):
+        dpg.enable_item("add_spin")
 
     if ui.sim_settings is not None:
         ui.sim_settings.enable()
@@ -184,11 +196,11 @@ def _load_nmr(sender, app_data, ui: "UI"):
 
     if dpg.get_value("main_plot_added"):
         update_simulation_plot(
-            ui.spin,
+            ui.current_spin,
             ui.sim_settings.points,
             ui.water_sim,
-            ui.spin.half_height_width,
-            ui.spin._nuclei_number,
+            ui.current_spin.half_height_width,
+            ui.current_spin._nuclei_number,
         )
     set_nmr_plot_values(nmr_array)
 
@@ -243,9 +255,9 @@ def _save_optimization_to_nmr(sender, app_data, ui: "UI") -> None:
     r_limit: float = nmr_array[0][0]
 
     spin_simulation = simulate_peaklist(
-        ui.spin.peaklist(),
+        ui.current_spin.peaklist(),
         ui.points,
-        ui.spin.half_height_width,
+        ui.current_spin.half_height_width,
         (l_limit, r_limit),
     )
 

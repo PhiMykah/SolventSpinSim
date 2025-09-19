@@ -80,30 +80,32 @@ def setter_callback(sender, app_data, user_data: tuple[object, str]) -> None:
 
 def set_points_callback(sender, app_data, user_data: "UI") -> None:
     user_data.points = app_data
-    if not user_data.spin.spin_names:
+    if not user_data.current_spin.spin_names:
         return
     update_simulation_plot(
-        user_data.spin,
+        user_data.current_spin,
         user_data.points,
         user_data.water_sim,
-        user_data.spin.half_height_width,
-        user_data.spin._nuclei_number,
+        user_data.current_spin.half_height_width,
+        user_data.current_spin._nuclei_number,
     )
 
 
 def set_field_strength_callback(sender, app_data, user_data: "UI") -> None:
     user_data.sim_settings["field_strength"] = app_data
-    if not user_data.spin.spin_names:
+    if not user_data.current_spin.spin_names:
         return
-    user_data.spin.field_strength = app_data
-    user_data.spin.nuclei_frequencies = user_data.spin._ppm_nuclei_frequencies
+    user_data.current_spin.field_strength = app_data
+    user_data.current_spin.nuclei_frequencies = (
+        user_data.current_spin._ppm_nuclei_frequencies
+    )
 
     update_simulation_plot(
-        user_data.spin,
+        user_data.current_spin,
         user_data.points,
         user_data.water_sim,
-        user_data.spin.half_height_width,
-        user_data.spin._nuclei_number,
+        user_data.current_spin.half_height_width,
+        user_data.current_spin._nuclei_number,
     )
     update_plotting_ui(user_data)
     zoom_subplots_to_peaks(user_data)
@@ -111,32 +113,34 @@ def set_field_strength_callback(sender, app_data, user_data: "UI") -> None:
 
 
 def set_intensity_callback(sender, app_data, user_data: "UI") -> None:
-    if user_data.spin._nuclei_number == 0:
+    if user_data.current_spin._nuclei_number == 0:
         return
-    user_data.spin.intensities = [app_data] * user_data.spin._nuclei_number
+    user_data.current_spin.intensities = [
+        app_data
+    ] * user_data.current_spin._nuclei_number
 
     update_simulation_plot(
-        user_data.spin,
+        user_data.current_spin,
         user_data.points,
         user_data.water_sim,
-        user_data.spin.half_height_width,
-        user_data.spin._nuclei_number,
+        user_data.current_spin.half_height_width,
+        user_data.current_spin._nuclei_number,
     )
     update_plotting_ui(user_data)
     zoom_subplots_to_peaks(user_data)
 
 
 def set_hhw_callback(sender, app_data, user_data: "UI") -> None:
-    if user_data.spin._nuclei_number == 0:
+    if user_data.current_spin._nuclei_number == 0:
         return
-    user_data.spin.half_height_width = app_data
+    user_data.current_spin.half_height_width = app_data
 
     update_simulation_plot(
-        user_data.spin,
+        user_data.current_spin,
         user_data.points,
         user_data.water_sim,
-        user_data.spin.half_height_width,
-        user_data.spin._nuclei_number,
+        user_data.current_spin.half_height_width,
+        user_data.current_spin._nuclei_number,
     )
     update_plotting_ui(user_data)
     zoom_subplots_to_peaks(user_data)
@@ -175,20 +179,3 @@ def set_water_range_callback(
     dpg.set_value("water_drag_left", start)
     dpg.set_value("water_drag_right", end)
     dpg.set_value("water_center_line", (start + end) / 2)
-
-
-def set_ui_water_callback(sender, app_data, user_data: "tuple[UI, str]") -> None:
-    ui = user_data[0]
-    attribute = user_data[1]
-
-    setattr(ui.water_sim, attribute, app_data)
-
-    update_simulation_plot(
-        ui.spin,
-        ui.points,
-        ui.water_sim,
-        ui.spin.half_height_width,
-        ui.spin._nuclei_number,
-    )
-    update_plotting_ui(ui)
-    zoom_subplots_to_peaks(ui)

@@ -233,9 +233,6 @@ def main_theme_components(theme: ThemeDict) -> None:
     with dpg.theme_component(dpg.mvButton):
         button_style()
 
-    with dpg.theme_component(dpg.mvInputFloat):
-        button_style()
-        
     # ------------------------------------ Tab ----------------------------------- #
     """
     Modify the tab container components

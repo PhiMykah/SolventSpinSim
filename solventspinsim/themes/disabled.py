@@ -23,7 +23,7 @@ def disabled_theme_components(theme: dict):
         )
         button_style()
 
-    with dpg.theme_component(dpg.mvInputFloat):
+    with dpg.theme_component(dpg.mvInputFloat, enabled_state=False):
         dpg.add_theme_color(
             dpg.mvThemeCol_Button,
             theme["BASE_DISABLED"],
@@ -35,5 +35,13 @@ def disabled_theme_components(theme: dict):
         dpg.add_theme_color(
             dpg.mvThemeCol_ButtonActive,
             theme["BASE_DISABLED"],
+        )
+        dpg.add_theme_color(
+            dpg.mvThemeCol_FrameBg,
+            theme["BASE_DISABLED"] + (100,),
+        )
+        dpg.add_theme_color(
+            dpg.mvText,
+            theme["BASE_DISABLED"] + (100,),
         )
         button_style()

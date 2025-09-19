@@ -45,7 +45,8 @@ class UI:
         self.nmr_file: str = settings["nmr_file"]
         self.output_file: str = settings["output_file"]
         self.mat_table: str = ""
-        self.spin = Spin(**settings["spin"])
+        self.current_spin = Spin(**settings["spin"])
+        self.spins: dict = {}
         self.window = None
         self.disabled_theme = None
         self.buttons: dict[str, Button] = {}
@@ -120,26 +121,37 @@ class UI:
             self.window = main_window
             with dpg.menu_bar():
                 with dpg.menu(label="File"):
-                    dpg.add_menu_item(
-                        label="Load Spin Matrix",
-                        callback=load_dialog_callback,
-                        check=False,
-                        user_data=(self, load_file, "spin"),
-                    )
-                    dpg.add_menu_item(
-                        label="Load NMR File",
-                        callback=load_dialog_callback,
-                        check=False,
-                        user_data=(self, load_nmr, "nmr"),
-                    )
-                    dpg.add_menu_item(
-                        label="Save Optimization",
-                        callback=save_dialog_callback,
-                        check=False,
-                        user_data=(self, save_opt, "optimization"),
-                        enabled=False,
-                        tag="opt_save",
-                    )
+                    with dpg.menu(label="Load"):
+                        dpg.add_menu_item(
+                            label="Load Spin Matrix",
+                            callback=load_dialog_callback,
+                            check=False,
+                            user_data=(self, load_file, "spin"),
+                        )
+                        dpg.add_menu_item(
+                            label="Load NMR File",
+                            callback=load_dialog_callback,
+                            check=False,
+                            user_data=(self, load_nmr, "nmr"),
+                        )
+                    with dpg.menu(label="Add"):
+                        dpg.add_menu_item(
+                            label="Add Spin Matrix",
+                            callback=load_dialog_callback,
+                            check=False,
+                            enabled=False,
+                            user_data=(self, load_file, "spin", True),
+                            tag="add_spin",
+                        )
+                    with dpg.menu(label="Save"):
+                        dpg.add_menu_item(
+                            label="Save Optimization",
+                            callback=save_dialog_callback,
+                            check=False,
+                            user_data=(self, save_opt, "optimization"),
+                            enabled=False,
+                            tag="opt_save",
+                        )
                 dpg.add_menu_item(label="Help", callback=test_callback)
 
                 with dpg.menu(label="Settings"):
@@ -186,7 +198,7 @@ class UI:
             dpg.add_separator()
 
             self.water_settings = WaterSettings(
-                self, main_window, True, **self.settings["water_sim"]
+                self, main_window, **self.settings["water_sim"]
             )
 
             self.plot_window = PlotWindow(self, main_window, True)

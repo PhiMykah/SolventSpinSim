@@ -2,13 +2,17 @@ from typing import TYPE_CHECKING
 
 import dearpygui.dearpygui as dpg
 
+from solventspinsim.components import DragFloat
+
 from .graphics import Graphic
 
 if TYPE_CHECKING:
     from solventspinsim.ui import UI
 
 
-def set_ui_water_callback(sender, app_data, user_data: "tuple[UI, str]") -> None:
+def set_ui_water_callback(
+    sender, app_data, user_data: "tuple[UI, str, WaterSettings]"
+) -> None:
     from solventspinsim.callbacks import (
         update_plotting_ui,
         update_simulation_plot,
@@ -17,15 +21,23 @@ def set_ui_water_callback(sender, app_data, user_data: "tuple[UI, str]") -> None
 
     ui = user_data[0]
     attribute = user_data[1]
-
+    try:
+        water_settings = user_data[2]
+        if attribute == "water_enable":
+            if app_data:
+                water_settings.enable()
+            else:
+                water_settings.disable()
+    except IndexError:
+        pass
     setattr(ui.water_sim, attribute, app_data)
 
     update_simulation_plot(
-        ui.spin,
+        ui.current_spin,
         ui.points,
         ui.water_sim,
-        ui.spin.half_height_width,
-        ui.spin._nuclei_number,
+        ui.current_spin.half_height_width,
+        ui.current_spin._nuclei_number,
     )
     update_plotting_ui(ui)
     zoom_subplots_to_peaks(ui)
@@ -82,7 +94,7 @@ class WaterSettings(Graphic):
             source=f"{water_enable}_value",
             tag=water_enable,
             callback=set_ui_water_callback,
-            user_data=(self.ui, "water_enable"),
+            user_data=(self.ui, "water_enable", self),
         )
 
         with dpg.table(header_row=False, parent=self.parent):
@@ -90,16 +102,17 @@ class WaterSettings(Graphic):
             dpg.add_table_column(width=100)
 
             with dpg.table_row():
-                dpg.add_drag_float(
+                self.water_freq = DragFloat(
                     label="Water Frequency",
                     format="%.02f",
                     tag=water_frequency,
                     source=f"{water_frequency}_value",
                     callback=set_ui_water_callback,
-                    user_data=(self.ui, "frequency"),
+                    user_data=(self.ui, "frequency", self),
                 )
+                self.components["water_freq"] = self.water_freq
 
-                dpg.add_drag_float(
+                self.water_intensity = DragFloat(
                     label="Water Intensity",
                     format="%.02f",
                     tag=water_intensity,
@@ -107,16 +120,24 @@ class WaterSettings(Graphic):
                     speed=0.1,
                     max_value=500,
                     callback=set_ui_water_callback,
-                    user_data=(self.ui, "intensity"),
+                    user_data=(self.ui, "intensity", self),
                 )
+                self.components["water_intensity"] = self.water_intensity
 
             with dpg.table_row():
-                dpg.add_drag_float(
+                self.water_hhw = DragFloat(
                     label="Water Half-height Width",
                     format="%.02f",
                     tag=water_hhw,
                     source=f"{water_hhw}_value",
                     speed=0.1,
                     callback=set_ui_water_callback,
-                    user_data=(self.ui, "hhw"),
+                    user_data=(self.ui, "hhw", self),
                 )
+                self.components["water_hhw"] = self.water_hhw
+
+        if self.params[water_enable]:
+            self.enable()
+        else:
+            self.disable()
+        self.is_rendered = True

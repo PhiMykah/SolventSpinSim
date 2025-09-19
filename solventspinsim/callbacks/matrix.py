@@ -18,6 +18,8 @@ if TYPE_CHECKING:
 
 
 def matrix_table(ui: "UI") -> None:
+    if dpg.does_item_exist("matrix_window"):
+        return
     with dpg.window(label="Spin Matrix", show=False, tag="matrix_window"):
         with dpg.table(header_row=False):
             dpg.add_table_column(width=100)
@@ -37,13 +39,13 @@ def matrix_table(ui: "UI") -> None:
 
             with dpg.table_row():
                 DragFloat(
-                    label="##Minimum Frequency",
+                    label="Minimum Frequency",
                     tag="table_min_freq",
                     default_value=-100.0,
                     width=-1,
                 )
                 DragFloat(
-                    label="##Maximum Frequency",
+                    label="Maximum Frequency",
                     tag="table_max_freq",
                     default_value=100.0,
                     width=-1,
@@ -60,9 +62,9 @@ def load_table(sender, app_data, user_data: "UI") -> None:
     min_value: float = dpg.get_value("table_min_freq")
     max_value: float = dpg.get_value("table_max_freq")
 
-    if not hasattr(ui, "spin") or not ui.spin:
+    if not hasattr(ui, "spin") or not ui.current_spin:
         return
-    spin: "Spin" = ui.spin
+    spin: "Spin" = ui.current_spin
 
     if hasattr(ui, "mat_table") and ui.mat_table != "":
         for i, row in enumerate(np.array(spin.couplings)):
@@ -109,7 +111,12 @@ def load_table(sender, app_data, user_data: "UI") -> None:
                             min_value=min_value,
                             max_value=max_value,
                             default_value=default_val,
-                            user_data=(ui, j, i, ui.spin._nuclei_frequencies[i]),
+                            user_data=(
+                                ui,
+                                j,
+                                i,
+                                ui.current_spin._nuclei_frequencies[i],
+                            ),
                             callback=modify_matrix,
                         )
                     else:
@@ -124,7 +131,7 @@ def modify_matrix(sender, app_data, user_data: "tuple[UI, int, int, float]") -> 
     """
     Modifies the spin coupling matrix value at (j, i) with the new value.
     """
-    spin: Spin = user_data[0].spin
+    spin: Spin = user_data[0].current_spin
     j: int = user_data[1]
     i: int = user_data[2]
     nuclei = user_data[3]

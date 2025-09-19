@@ -109,16 +109,16 @@ class Settings:
 
         # Spin Object
         spin: dict = {
-            "spin_names": ui.spin.spin_names,
-            "nuclei_frequencies": ui.spin._ppm_nuclei_frequencies,
-            "half_height_width": ui.spin.half_height_width,
-            "field_strength": ui.spin.field_strength,
-            "intensities": ui.spin.intensities,
+            "spin_names": ui.current_spin.spin_names,
+            "nuclei_frequencies": ui.current_spin._ppm_nuclei_frequencies,
+            "half_height_width": ui.current_spin.half_height_width,
+            "field_strength": ui.current_spin.field_strength,
+            "intensities": ui.current_spin.intensities,
             "coupling_strength": "weak"
-            if ui.spin.coupling_strength.value == 0
+            if ui.current_spin.coupling_strength.value == 0
             else "strong",
         }
-        spin["couplings"] = [list(c) for c in ui.spin._couplings]
+        spin["couplings"] = [list(c) for c in ui.current_spin._couplings]
 
         self.values["spin"] = spin
         # Water range
@@ -191,7 +191,7 @@ class Settings:
             intensities,
             coupling_strength,
         )
-        ui.spin = loaded_spin
+        ui.current_spin = loaded_spin
 
         # Water range
         water_range = self.values.get("water_range", [0.0, 1000.0])

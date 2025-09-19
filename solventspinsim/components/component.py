@@ -15,6 +15,7 @@ class Component:
         self.label: str = kwargs.get("label", "")
         # Extract a user-provided tag or create our own
         self.tag: int | str = kwargs.get("tag", dpg.generate_uuid())
+        self.tags = [self.tag]
         kwargs["tag"] = self.tag
         kwargs["label"] = self.label
         self._args = args

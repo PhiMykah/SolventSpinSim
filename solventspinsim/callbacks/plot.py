@@ -18,12 +18,12 @@ COUPLING_DRAG_HEIGHT = -0.01
 
 def add_subplots(ui: "UI") -> None:
     """
-    Assumes that ui.spin has been set and main plot has been set
+    Assumes that ui.current_spin has been set and main plot has been set
     """
-    n_peaks: int = len(ui.spin.spin_names)
-    if n_peaks != ui.spin._nuclei_number:
+    n_peaks: int = len(ui.current_spin.spin_names)
+    if n_peaks != ui.current_spin._nuclei_number:
         raise ValueError(
-            f"Number of spin nuclei {n_peaks} not equal to nuclei count {ui.spin._nuclei_number}!"
+            f"Number of spin nuclei {n_peaks} not equal to nuclei count {ui.current_spin._nuclei_number}!"
         )
 
     if ui.window is None:
@@ -55,7 +55,7 @@ def add_subplots(ui: "UI") -> None:
                 parent=scroll_area,
                 link_rows=True,
             ) as subplots_tag:
-                for i, spin_name in enumerate(ui.spin.spin_names):
+                for i, spin_name in enumerate(ui.current_spin.spin_names):
                     with dpg.plot(label=f"Nuclei {spin_name}", tag=f"peak_plot_{i}"):
                         dpg.add_plot_legend()
                         dpg.add_plot_axis(
@@ -94,8 +94,8 @@ def zoom_subplots_to_peaks(ui: "UI", padding: float = 10.0):
     Sets the x-axis limits for each subplot to zoom around the peaks associated with each spin nucleus.
     Uses the coupling matrix to determine the outer limits.
     """
-    nuclei_freqs = ui.spin.nuclei_frequencies
-    couplings = np.array(ui.spin.couplings)
+    nuclei_freqs = ui.current_spin.nuclei_frequencies
+    couplings = np.array(ui.current_spin.couplings)
     n = len(nuclei_freqs)
 
     for i in range(n):
@@ -112,11 +112,11 @@ def zoom_subplots_to_peaks(ui: "UI", padding: float = 10.0):
             max_x = nucleus_freq + padding
 
         # Optionally, set y-axis limits as well (here, just a default range)
-        if ui.spin.intensities[i] > 0:
+        if ui.current_spin.intensities[i] > 0:
             min_y: float = -0.1
-            max_y: float = ui.spin.intensities[i] + 0.1
+            max_y: float = ui.current_spin.intensities[i] + 0.1
         else:
-            min_y: float = ui.spin.intensities[i] - 0.1
+            min_y: float = ui.current_spin.intensities[i] - 0.1
             max_y: float = 0.1
 
         # Set axis limits for subplot i
@@ -146,11 +146,11 @@ def update_plot_callback(sender, app_data, user_data: "UI") -> None:
             fit_axes_button.enable()
 
     update_simulation_plot(
-        ui.spin,
+        ui.current_spin,
         ui.sim_settings.points,
         ui.water_sim,
-        ui.spin.half_height_width,
-        ui.spin._nuclei_number,
+        ui.current_spin.half_height_width,
+        ui.current_spin._nuclei_number,
     )
     fit_axes(ui.plot_tags["main"])
     create_drag_lines(ui)
@@ -165,14 +165,14 @@ def create_drag_lines(ui: "UI") -> None:
     if dpg.get_value("drag_lines_visible"):
         return
 
-    nuclei_frequencies = ui.spin.nuclei_frequencies
+    nuclei_frequencies = ui.current_spin.nuclei_frequencies
     n = len(nuclei_frequencies)
 
     plot_tags = [ui.plot_tags["main"]["plot"]] + [
         p["plot"] for p in ui.plot_tags["peaks"]
     ]
 
-    couplings = np.array(ui.spin.couplings)
+    couplings = np.array(ui.current_spin.couplings)
     for i, nuclei in enumerate(nuclei_frequencies):
         # Create a color gradient from blue to red as i increases
         r = int(255 * i / max(n - 1, 1))
@@ -180,9 +180,9 @@ def create_drag_lines(ui: "UI") -> None:
         b = int(255 * (1 - i / max(n - 1, 1)))
         color: list[int] = [r, g, b, 100]
         for p, plot in enumerate(plot_tags):
-            tag: str = f"nuclei_{p}_{ui.spin.spin_names[i]}"
+            tag: str = f"nuclei_{p}_{ui.current_spin.spin_names[i]}"
             dpg.add_drag_line(
-                label=f"Nuclei {ui.spin.spin_names[i]}",
+                label=f"Nuclei {ui.current_spin.spin_names[i]}",
                 color=color,
                 tag=tag,
                 callback=update_drag_item,
@@ -201,8 +201,8 @@ def create_drag_lines(ui: "UI") -> None:
             coupling_color: list[int] = [r, g, b, 255]
             if value != 0.0:
                 for p, plot in enumerate(plot_tags):
-                    spin_row = ui.spin.spin_names[i]
-                    spin_col = ui.spin.spin_names[col_index]
+                    spin_row = ui.current_spin.spin_names[i]
+                    spin_col = ui.current_spin.spin_names[col_index]
                     right_coords = (nuclei + value, COUPLING_DRAG_HEIGHT)
                     left_coords = (nuclei - value, COUPLING_DRAG_HEIGHT)
                     right_tag = f"coupling_drag_{p}r_{i}_{col_index}"
@@ -244,17 +244,17 @@ def update_drag_item(sender, app_data, user_data: tuple["UI", "str", "tuple"]):
     plot_tags = [ui.plot_tags["main"]["plot"]] + [
         p["plot"] for p in ui.plot_tags["peaks"]
     ]
-    n = len(ui.spin.spin_names)
+    n = len(ui.current_spin.spin_names)
 
     if tag.startswith("nuclei_"):
         # Drag line update
         i = indices[0]
         new_value = dpg.get_value(sender)
-        ui.spin._nuclei_frequencies[i] = new_value
+        ui.current_spin._nuclei_frequencies[i] = new_value
 
         # Update all drag lines for this nucleus
         for p in range(len(plot_tags)):
-            nuclei_tag = f"nuclei_{p}_{ui.spin.spin_names[i]}"
+            nuclei_tag = f"nuclei_{p}_{ui.current_spin.spin_names[i]}"
             if dpg.does_item_exist(nuclei_tag):
                 dpg.set_value(nuclei_tag, new_value)
 
@@ -263,7 +263,7 @@ def update_drag_item(sender, app_data, user_data: tuple["UI", "str", "tuple"]):
                 for tag_type, sign in (("r", 1), ("l", -1)):
                     drag_tag = f"coupling_drag_{p}{tag_type}_{i}_{j}"
                     if dpg.does_item_exist(drag_tag):
-                        coupling_value = ui.spin._couplings[i][j]
+                        coupling_value = ui.current_spin._couplings[i][j]
                         dpg.set_value(
                             drag_tag,
                             (new_value + sign * coupling_value, COUPLING_DRAG_HEIGHT),
@@ -271,18 +271,18 @@ def update_drag_item(sender, app_data, user_data: tuple["UI", "str", "tuple"]):
 
         # Simulate and zoom
         update_simulation_plot(
-            ui.spin,
+            ui.current_spin,
             ui.sim_settings.points,
             ui.water_sim,
-            ui.spin.half_height_width,
-            ui.spin._nuclei_number,
+            ui.current_spin.half_height_width,
+            ui.current_spin._nuclei_number,
         )
         zoom_subplots_to_peaks(ui)
 
     elif tag.startswith("coupling_drag_"):
         # Drag point update
         i, j = indices
-        nuclei_value = ui.spin._nuclei_frequencies[i]
+        nuclei_value = ui.current_spin._nuclei_frequencies[i]
         new_x_value, _ = dpg.get_value(sender)
         offset = new_x_value - nuclei_value
         # Update drag point
@@ -310,23 +310,23 @@ def update_drag_item(sender, app_data, user_data: tuple["UI", "str", "tuple"]):
             dpg.set_value(mirrored_tag, (other_x_value, COUPLING_DRAG_HEIGHT))
 
         # Update coupling matrix
-        ui.spin._couplings[i][j] = offset
-        ui.spin._couplings[j][i] = offset
+        ui.current_spin._couplings[i][j] = offset
+        ui.current_spin._couplings[j][i] = offset
         # Update matrix table
         dpg.set_value(f"coupling_{j}_{i}", offset)
         dpg.set_value(f"coupling_{i}_{j}", offset)
         # Update drag lines for this nucleus
         for p in range(len(plot_tags)):
-            nuclei_tag = f"nuclei_{p}_{ui.spin.spin_names[i]}"
+            nuclei_tag = f"nuclei_{p}_{ui.current_spin.spin_names[i]}"
             if dpg.does_item_exist(nuclei_tag):
                 dpg.set_value(nuclei_tag, nuclei_value)
         # Simulate and zoom
         update_simulation_plot(
-            ui.spin,
+            ui.current_spin,
             ui.sim_settings.points,
             ui.water_sim,
-            ui.spin.half_height_width,
-            ui.spin._nuclei_number,
+            ui.current_spin.half_height_width,
+            ui.current_spin._nuclei_number,
         )
         zoom_subplots_to_peaks(ui)
 
@@ -432,14 +432,14 @@ def update_plotting_ui(ui: "UI") -> None:
     """
     Updates all drag lines and drag points to reflect the current spin state.
     """
-    n = len(ui.spin.spin_names)
-    nuclei_frequencies = ui.spin.nuclei_frequencies
-    couplings = np.array(ui.spin.couplings)
+    n = len(ui.current_spin.spin_names)
+    nuclei_frequencies = ui.current_spin.nuclei_frequencies
+    couplings = np.array(ui.current_spin.couplings)
 
     # Update drag lines for nuclei frequencies
     for i, nuclei in enumerate(nuclei_frequencies):
         for p in range(n):
-            tag = f"nuclei_{p}_{ui.spin.spin_names[i]}"
+            tag = f"nuclei_{p}_{ui.current_spin.spin_names[i]}"
             # Find drag line by label (since tag is label)
             if dpg.does_item_exist(tag):
                 dpg.set_value(tag, nuclei)

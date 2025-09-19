@@ -4,10 +4,9 @@ from typing import TYPE_CHECKING
 
 import dearpygui.dearpygui as dpg
 
-from solventspinsim.themes import Theme
-
 if TYPE_CHECKING:
     from solventspinsim.ui import UI
+    from solventspinsim.components.component import Component
 
 
 def load_static_texture(file: str, texture_tag: int | str = 0) -> int | str:
@@ -37,6 +36,8 @@ class Graphic:
         self.is_rendered = False
         if not hasattr(self, "params"):
             self.params: dict = {}
+        if not hasattr(self, "components"):
+            self.components: "dict[str, Component]" = {}
 
         if ui is not None or parent is not None:
             self.render()
@@ -53,17 +54,13 @@ class Graphic:
                     dpg.set_value(f"{key}_value", self.params[key])
 
     def disable(self) -> None:
-        for tag in self.params.keys():
-            if dpg.does_item_exist(tag):
-                dpg.disable_item(tag)
-                dpg.bind_item_theme(tag, Theme.disabled_theme())
+        for component in self.components.values():
+            component.disable()
         self.enabled = False
 
     def enable(self) -> None:
-        for tag in self.params.keys():
-            if dpg.does_item_exist(tag):
-                dpg.enable_item(tag)
-                dpg.bind_item_theme(tag, "")
+        for component in self.components.values():
+            component.enable()
         self.enabled = True
 
     def toggle(self) -> None:
